@@ -1,0 +1,18 @@
+services:
+  db:
+    image: percona/percona-server
+    container_name: dsw-ps8
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_USER: "admin"
+      MYSQL_PASSWORD: "admin"
+      MYSQL_DATABASE: "dsw"
+    ports:
+      - "3306:3306"
+    volumes:
+      - dsw_db_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  dsw_db_data:
