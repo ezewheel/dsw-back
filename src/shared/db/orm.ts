@@ -2,7 +2,7 @@ import { MikroORM } from "@mikro-orm/core";
 import { MySqlDriver } from "@mikro-orm/mysql";
 import { SqlHighlighter } from "@mikro-orm/sql-highlighter";
 
-const orm = await MikroORM.init({
+export const orm = await MikroORM.init({
   driver: MySqlDriver,
   entities: ["./dist/shared/db/entities"],
   entitiesTs: ["./src/shared/db/entities"],
@@ -18,3 +18,7 @@ const orm = await MikroORM.init({
     ignoreSchema: [],
   },
 });
+
+export const syncSchema = async () => {
+  await orm.schema.update();
+};
