@@ -1,6 +1,17 @@
 import { orm } from "../shared/db/orm.js";
 import { User } from "../user/user.entity.js";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
+const jwtSecretEnv = process.env.JWT_SECRET;
+
+if (!jwtSecretEnv) {
+  throw new Error("JWT_SECRET no está definido en las variables de entorno");
+}
+
+const jwtSecret: string = jwtSecretEnv;
+
+const JWT_EXPIRES_IN = "7d";
 
 export interface AuthUser {
   id: number;
@@ -8,12 +19,24 @@ export interface AuthUser {
   nickname: string;
 }
 
+export interface AuthTokenPayload {
+  sub: number;
+  iat: number;
+  exp: number;
+}
+
+interface AuthSuccess {
+  ok: true;
+  token: string;
+  user: AuthUser;
+}
+
 export type LoginResult =
-  | { ok: true; token: string }
+  | AuthSuccess
   | { ok: false; error: "INVALID_CREDENTIALS" };
 
 export type RegisterResult =
-  | { ok: true; user: AuthUser }
+  | AuthSuccess
   | { ok: false; error: "EMAIL_TAKEN" };
 
 export async function login(input: {
@@ -26,7 +49,7 @@ export async function login(input: {
     return { ok: false, error: "INVALID_CREDENTIALS" };
   }
 
-  return { ok: true, token: createAuthToken(user) };
+  return { ok: true, token: createAuthToken(user), user: toAuthUser(user) };
 }
 
 export async function register(input: {
@@ -47,12 +70,17 @@ export async function register(input: {
 
   await orm.em.persist(user).flush();
 
-  return {
-    ok: true,
-    user: { id: user.id!, email: user.email, nickname: user.nickname },
-  };
+  return { ok: true, token: createAuthToken(user), user: toAuthUser(user) };
 }
 
-function createAuthToken(_user: User): string {
-  return "ok";
+function toAuthUser(user: User): AuthUser {
+  return { id: user.id!, email: user.email, nickname: user.nickname };
+}
+
+function createAuthToken(user: User): string {
+  return jwt.sign({ sub: user.id! }, jwtSecret, { expiresIn: JWT_EXPIRES_IN });
+}
+
+export function verifyAuthToken(token: string): AuthTokenPayload {
+  return jwt.verify(token, jwtSecret) as unknown as AuthTokenPayload;
 }
