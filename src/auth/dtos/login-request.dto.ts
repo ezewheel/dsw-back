@@ -1,6 +1,11 @@
+import { Transform } from "class-transformer";
 import { IsEmail, IsString, MinLength } from "class-validator";
 
+const toTrimmedEmail = ({ value }: { value: unknown }) =>
+  typeof value === "string" ? value.trim().toLowerCase() : value;
+
 export class LoginRequestDTO {
+  @Transform(toTrimmedEmail)
   @IsEmail({}, { message: "El email no tiene un formato válido" })
   email!: string;
 

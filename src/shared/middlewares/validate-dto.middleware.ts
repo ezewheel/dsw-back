@@ -8,7 +8,10 @@ export const validateDTO =
   <T extends object>(dtoClass: new () => T, source: RequestSource = "body") =>
   async (req: Request, res: Response, next: NextFunction) => {
     const dto = plainToInstance(dtoClass, req[source] ?? {});
-    const errors = await validate(dto);
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
 
     if (errors.length > 0) {
       return res.status(400).json({
