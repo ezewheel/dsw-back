@@ -84,3 +84,8 @@ function createAuthToken(user: User): string {
 export function verifyAuthToken(token: string): AuthTokenPayload {
   return jwt.verify(token, jwtSecret) as unknown as AuthTokenPayload;
 }
+
+export async function getMe(userId: number): Promise<AuthUser | null> {
+  const user = await orm.em.findOne(User, { id: userId });
+  return user ? toAuthUser(user) : null;
+}
