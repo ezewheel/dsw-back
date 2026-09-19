@@ -12,9 +12,9 @@ import { MusicalEntity } from "../musical-entity/musical-entity.entity.js";
 @Unique({
   properties: ["user", "musicalEntity"],
 })
-export class Interaction {
+export class Favorite {
   @PrimaryKey()
-  id!: number;
+  id?: number;
 
   @ManyToOne()
   user!: User;
@@ -23,17 +23,5 @@ export class Interaction {
   musicalEntity!: MusicalEntity;
 
   @Property({ nullable: false })
-  value!: string;
-
-  @Property({ nullable: true })
-  content?: string;
-
-  @Property({ nullable: false })
-  createdAt: Date = new Date();
-
-  @Property({ nullable: false })
-  updatedAt: Date = new Date();
-
-  @Property({ nullable: true })
-  deletedAt?: Date;
+  favoritedAt: Date = new Date();
 }
