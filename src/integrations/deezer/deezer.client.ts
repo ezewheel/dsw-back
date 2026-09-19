@@ -1,6 +1,8 @@
-import type { DeezerAlbumDTO } from "./dtos/deezer-album.dto.js";
-import type { DeezerArtistDTO } from "./dtos/deezer-artist.dto.js";
-import type { DeezerTrackDTO } from "./dtos/deezer-track.dto.js";
+import type {
+  DeezerTrackDTO,
+  DeezerAlbumDTO,
+  DeezerArtistDTO,
+} from "./dtos/deezer-responses.dto.js";
 
 const DEEZER_BASE_URL = "https://api.deezer.com";
 

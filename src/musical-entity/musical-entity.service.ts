@@ -55,14 +55,16 @@ function project(
   raw: DeezerSearchResult,
   ratings: Map<string, number>,
 ): MusicalSearchResult {
+  const lookupKey = (r: { id: number }) => `${raw.type}-${r.id}`;
   const averageRating = (r: { id: number }) =>
-    ratings.get(`${raw.type}-${r.id}`) ?? null;
+    ratings.get(lookupKey(r)) ?? null;
 
   switch (raw.type) {
     case "track":
       return {
-        type: "track",
         results: raw.results.map((r) => ({
+          externalId: String(r.id),
+          type: raw.type,
           title: r.title,
           artist: { name: r.artist.name },
           album: { cover_medium: r.album.cover_medium },
@@ -71,8 +73,9 @@ function project(
       };
     case "album":
       return {
-        type: "album",
         results: raw.results.map((r) => ({
+          externalId: String(r.id),
+          type: raw.type,
           title: r.title,
           cover_medium: r.cover_medium,
           artist: { name: r.artist.name },
@@ -81,8 +84,9 @@ function project(
       };
     case "artist":
       return {
-        type: "artist",
         results: raw.results.map((r) => ({
+          externalId: String(r.id),
+          type: raw.type,
           name: r.name,
           picture_medium: r.picture_medium,
           averageRating: averageRating(r),
