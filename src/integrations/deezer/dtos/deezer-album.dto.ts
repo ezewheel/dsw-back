@@ -2,6 +2,7 @@ export interface DeezerAlbumDTO {
   id: number;
   title: string;
   cover_big: string;
+  cover_medium: string;
   release_date: string;
   artist: {
     id: number;
