@@ -3,12 +3,16 @@ export type TrackSearchResult = {
   type: "track";
   title: string;
   artist: {
+    id: number;
     name: string;
   };
   album: {
+    id: number;
+    title: string;
     cover_medium: string;
   };
   averageRating: number | null;
+  reviewsCount: number;
 };
 
 export type AlbumSearchResult = {
@@ -17,9 +21,11 @@ export type AlbumSearchResult = {
   title: string;
   cover_medium: string;
   artist: {
+    id: number;
     name: string;
   };
   averageRating: number | null;
+  reviewsCount: number;
 };
 
 export type ArtistSearchResult = {
@@ -28,8 +34,11 @@ export type ArtistSearchResult = {
   name: string;
   picture_medium: string;
   averageRating: number | null;
+  reviewsCount: number;
 };
 
 export type MusicalSearchResult = {
   results: (TrackSearchResult | AlbumSearchResult | ArtistSearchResult)[];
+  total: number;
+  hasMore: boolean;
 };

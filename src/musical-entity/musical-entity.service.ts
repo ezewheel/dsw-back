@@ -32,10 +32,13 @@ export async function getEntityInteractions(input: {
   page: number;
   pageSize: number;
 }): Promise<EntityInteractionsServiceResult> {
-  const externalId = `${input.type}-${input.id}`;
+  const externalId = input.id;
 
   try {
-    const entity = await orm.em.findOne(MusicalEntity, { externalId });
+    const entity = await orm.em.findOne(MusicalEntity, {
+      type: input.type,
+      deezerId: Number(input.id),
+    });
 
     if (!entity) {
       return {
@@ -104,10 +107,10 @@ export async function getArtistDetail(
     return { ok: false, error: "DEEZER_ERROR" };
   }
 
-  let ratings: Map<string, number>;
+  let ratings: Map<string, EntityStats>;
 
   try {
-    ratings = await fetchAverageRatings({ type: "track", results: topTracks });
+    ratings = await fetchEntityStats({ type: "track", results: topTracks });
   } catch {
     return { ok: false, error: "DB_ERROR" };
   }
@@ -120,7 +123,7 @@ export async function getArtistDetail(
         title: track.album.title,
         cover_medium: track.album.cover_medium,
       },
-      averageRating: ratings.get(`track-${track.id}`) ?? null,
+      averageRating: ratings.get(String(track.id))?.averageRating ?? null,
     }))
     .sort((a, b) => (b.averageRating ?? -1) - (a.averageRating ?? -1))
     .slice(0, 5);
@@ -145,11 +148,13 @@ export async function getArtistDetail(
 export async function search(input: {
   query: string;
   type: DeezerSearchType;
+  limit: number;
+  index: number;
 }): Promise<SearchResult> {
   let raw: DeezerSearchResult;
 
   try {
-    raw = await deezerClient.search(input.query, input.type);
+    raw = await deezerClient.search(input);
   } catch {
     return { ok: false, error: "DEEZER_ERROR" };
   }
@@ -158,34 +163,46 @@ export async function search(input: {
     raw.results.sort((a, b) => b.nb_fan - a.nb_fan);
   }
 
-  let ratings: Map<string, number>;
+  let stats: Map<string, EntityStats>;
 
   try {
-    ratings = await fetchAverageRatings(raw);
+    stats = await fetchEntityStats(raw);
   } catch {
     return { ok: false, error: "DB_ERROR" };
   }
 
-  return { ok: true, results: project(raw, ratings) };
+  return { ok: true, results: project(raw, stats) };
 }
 
-async function fetchAverageRatings(
-  raw: DeezerSearchResult,
-): Promise<Map<string, number>> {
-  const externalIds = raw.results.map((r) => `${raw.type}-${r.id}`);
+type EntityStats = { averageRating: number | null; reviewsCount: number };
+
+async function fetchEntityStats(raw: {
+  type: DeezerSearchType;
+  results: { id: number }[];
+}): Promise<Map<string, EntityStats>> {
+  const deezerIds = raw.results.map((r) => r.id);
   const entities = await orm.em.find(MusicalEntity, {
-    externalId: { $in: externalIds },
+    type: raw.type,
+    deezerId: { $in: deezerIds },
   });
-  return new Map(entities.map((e) => [e.externalId, e.averageRating]));
+  return new Map(
+    entities.map((e) => [
+      String(e.deezerId),
+      { averageRating: e.averageRating, reviewsCount: e.reviewsCount },
+    ]),
+  );
 }
 
 function project(
   raw: DeezerSearchResult,
-  ratings: Map<string, number>,
+  stats: Map<string, EntityStats>,
 ): MusicalSearchResult {
-  const lookupKey = (r: { id: number }) => `${raw.type}-${r.id}`;
-  const averageRating = (r: { id: number }) =>
-    ratings.get(lookupKey(r)) ?? null;
+  const entityStats = (r: { id: number }): EntityStats =>
+    stats.get(String(r.id)) ?? { averageRating: null, reviewsCount: 0 };
+  const averageRating = (r: { id: number }) => entityStats(r).averageRating;
+  const reviewsCount = (r: { id: number }) => entityStats(r).reviewsCount;
+
+  const hasMore = raw.index + raw.results.length < raw.total;
 
   switch (raw.type) {
     case "track":
@@ -194,10 +211,17 @@ function project(
           externalId: String(r.id),
           type: raw.type,
           title: r.title,
-          artist: { name: r.artist.name },
-          album: { cover_medium: r.album.cover_medium },
+          artist: { id: r.artist.id, name: r.artist.name },
+          album: {
+            id: r.album.id,
+            title: r.album.title,
+            cover_medium: r.album.cover_medium,
+          },
           averageRating: averageRating(r),
+          reviewsCount: reviewsCount(r),
         })),
+        total: raw.total,
+        hasMore,
       };
     case "album":
       return {
@@ -206,9 +230,12 @@ function project(
           type: raw.type,
           title: r.title,
           cover_medium: r.cover_medium,
-          artist: { name: r.artist.name },
+          artist: { id: r.artist.id, name: r.artist.name },
           averageRating: averageRating(r),
+          reviewsCount: reviewsCount(r),
         })),
+        total: raw.total,
+        hasMore,
       };
     case "artist":
       return {
@@ -218,7 +245,10 @@ function project(
           name: r.name,
           picture_medium: r.picture_medium,
           averageRating: averageRating(r),
+          reviewsCount: reviewsCount(r),
         })),
+        total: raw.total,
+        hasMore,
       };
   }
 }

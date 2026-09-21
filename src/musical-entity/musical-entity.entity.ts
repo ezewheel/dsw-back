@@ -1,12 +1,16 @@
-import { Entity, PrimaryKey, Property } from "@mikro-orm/decorators/legacy";
+import { Entity, PrimaryKey, Property, Unique } from "@mikro-orm/decorators/legacy";
 
 @Entity()
+@Unique({ properties: ["type", "deezerId"] })
 export class MusicalEntity {
   @PrimaryKey()
   id?: number;
 
-  @Property({ nullable: false, unique: true })
-  externalId!: string;
+  @Property({ nullable: false, type: "bigint" })
+  deezerId!: number;
+
+  @Property({ nullable: false })
+  type!: "artist" | "album" | "track";
 
   @Property({ nullable: false, type: "integer" })
   reviewsCount: number = 0;

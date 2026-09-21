@@ -9,10 +9,17 @@ const DEEZER_BASE_URL = "https://api.deezer.com";
 
 export type DeezerSearchType = "track" | "album" | "artist";
 
+export interface DeezerSearchParams {
+  query: string;
+  type: DeezerSearchType;
+  limit: number;
+  index: number;
+}
+
 export type DeezerSearchResult =
-  | { type: "track"; results: DeezerTrackDTO[] }
-  | { type: "album"; results: DeezerAlbumDTO[] }
-  | { type: "artist"; results: DeezerArtistDTO[] };
+  | { type: "track"; results: DeezerTrackDTO[]; total: number; index: number }
+  | { type: "album"; results: DeezerAlbumDTO[]; total: number; index: number }
+  | { type: "artist"; results: DeezerArtistDTO[]; total: number; index: number };
 
 const SEARCH_ENDPOINTS: Record<DeezerSearchType, string> = {
   track: "track",
@@ -38,21 +45,26 @@ export class DeezerClient {
     return data as T;
   }
 
-  async search(
-    query: string,
-    type: DeezerSearchType,
-  ): Promise<DeezerSearchResult> {
-    const data = await this.get<{ data: unknown[] }>(
-      `/search/${SEARCH_ENDPOINTS[type]}?q=${encodeURIComponent(query)}`,
+  async search({
+    query,
+    type,
+    limit,
+    index,
+  }: DeezerSearchParams): Promise<DeezerSearchResult> {
+    const data = await this.get<{ data: unknown[]; total: number }>(
+      `/search/${SEARCH_ENDPOINTS[type]}?q=${encodeURIComponent(query)}&limit=${limit}&index=${index}`,
     );
+
+    const results = data.data;
+    const total = data.total as number;
 
     switch (type) {
       case "track":
-        return { type, results: data.data as DeezerTrackDTO[] };
+        return { type, results: results as DeezerTrackDTO[], total, index };
       case "album":
-        return { type, results: data.data as DeezerAlbumDTO[] };
+        return { type, results: results as DeezerAlbumDTO[], total, index };
       case "artist":
-        return { type, results: data.data as DeezerArtistDTO[] };
+        return { type, results: results as DeezerArtistDTO[], total, index };
     }
   }
 
