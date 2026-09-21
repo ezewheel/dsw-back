@@ -4,7 +4,7 @@ export type EntityInteraction = {
     id: number;
     nickname: string;
   };
-  value: string;
+  value: number;
   content: string | null;
   createdAt: string;
 };

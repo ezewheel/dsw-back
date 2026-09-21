@@ -9,6 +9,7 @@ import {
 import type { MusicalSearchResult } from "./dtos/search-result.dto.js";
 import type { ArtistDetail } from "./dtos/artist-detail.dto.js";
 import type { EntityInteractionsResult } from "./dtos/entity-interactions-result.dto.js";
+import type { EntityReview } from "./dtos/entity-reviews-result.dto.js";
 
 const deezerClient = new DeezerClient();
 
@@ -25,6 +26,52 @@ export type ArtistDetailResult =
 export type EntityInteractionsServiceResult =
   | { ok: true; data: EntityInteractionsResult }
   | { ok: false; error: "DB_ERROR" };
+
+export type EntityReviewsResult =
+  | { ok: true; data: EntityReview[] }
+  | { ok: false; error: "DB_ERROR" };
+
+export async function getEntityReviews(input: {
+  type: "track" | "album" | "artist";
+  id: string;
+}): Promise<EntityReviewsResult> {
+  try {
+    const entity = await orm.em.findOne(MusicalEntity, {
+      type: input.type,
+      deezerId: Number(input.id),
+    });
+
+    if (!entity) {
+      return { ok: true, data: [] };
+    }
+
+    const interactions = await orm.em.find(
+      Interaction,
+      { musicalEntity: entity, deletedAt: null, content: { $ne: null } },
+      {
+        populate: ["user"],
+        orderBy: { createdAt: "DESC" },
+      },
+    );
+
+    return {
+      ok: true,
+      data: interactions.map((interaction) => ({
+        id: interaction.id,
+        user: {
+          id: interaction.user.id!,
+          nickname: interaction.user.nickname,
+        },
+        value: interaction.value,
+        content: interaction.content!,
+        createdAt: interaction.createdAt.toISOString(),
+        updatedAt: interaction.updatedAt.toISOString(),
+      })),
+    };
+  } catch {
+    return { ok: false, error: "DB_ERROR" };
+  }
+}
 
 export async function getEntityInteractions(input: {
   type: "track" | "album" | "artist";

@@ -7,6 +7,7 @@ import {
   search,
   getArtistDetail,
   getEntityInteractions,
+  getEntityReviews,
 } from "./musical-entity.controller.js";
 import { validateDTO } from "../shared/middlewares/validate-dto.middleware.js";
 
@@ -23,6 +24,11 @@ router.get(
   validateDTO(EntityInteractionsParamsDTO, "params"),
   validateDTO(EntityInteractionsQueryDTO, "query"),
   getEntityInteractions,
+);
+router.get(
+  "/:type/:id/reviews",
+  validateDTO(EntityInteractionsParamsDTO, "params"),
+  getEntityReviews,
 );
 
 export default router;
