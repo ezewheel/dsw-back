@@ -3,8 +3,9 @@ import { search as searchService } from "./musical-entity.service.js";
 import type { SearchRequestDTO } from "./dtos/search-request.dto.js";
 
 export async function search(req: Request, res: Response) {
-  const { query, type } = req.query as unknown as SearchRequestDTO;
-  const result = await searchService({ query, type });
+  const { query, type, limit, index } =
+    req.query as unknown as SearchRequestDTO;
+  const result = await searchService({ query, type, limit, index });
 
   if (!result.ok) {
     const status = result.error === "DEEZER_ERROR" ? 502 : 500;
