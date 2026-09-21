@@ -29,6 +29,7 @@ export interface DeezerTrackDTO {
     id: number;
     title: string;
     cover_medium: string;
+    cover_big?: string;
   };
 }
 
@@ -36,5 +37,13 @@ export interface DeezerArtistDTO {
   id: number;
   name: string;
   picture_medium: string;
+  picture_big: string;
   nb_fan: number;
+}
+
+export interface DeezerAlbumListItemDTO {
+  id: number;
+  title: string;
+  cover_big: string;
+  release_date: string;
 }
