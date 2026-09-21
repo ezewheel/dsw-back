@@ -2,10 +2,12 @@ import type { Request, Response } from "express";
 import {
   search as searchService,
   getArtistDetail as getArtistDetailService,
+  getAlbumDetail as getAlbumDetailService,
   getEntityInteractions as getEntityInteractionsService,
 } from "./musical-entity.service.js";
 import type { SearchRequestDTO } from "./dtos/search-request.dto.js";
 import type { ArtistParamsDTO } from "./dtos/artist-params.dto.js";
+import type { AlbumParamsDTO } from "./dtos/album-params.dto.js";
 import type { EntityInteractionsParamsDTO } from "./dtos/entity-interactions-params.dto.js";
 import type { EntityInteractionsQueryDTO } from "./dtos/entity-interactions-query.dto.js";
 
@@ -29,6 +31,22 @@ export async function search(req: Request, res: Response) {
 export async function getArtistDetail(req: Request, res: Response) {
   const { id } = req.params as unknown as ArtistParamsDTO;
   const result = await getArtistDetailService(id);
+
+  if (!result.ok) {
+    const status = result.error === "DEEZER_ERROR" ? 502 : 500;
+    const message =
+      result.error === "DEEZER_ERROR"
+        ? "Error al consultar a Deezer"
+        : "Error al consultar la base de datos";
+    return res.status(status).json({ message });
+  }
+
+  return res.status(200).json(result.data);
+}
+
+export async function getAlbumDetail(req: Request, res: Response) {
+  const { id } = req.params as unknown as AlbumParamsDTO;
+  const result = await getAlbumDetailService(id);
 
   if (!result.ok) {
     const status = result.error === "DEEZER_ERROR" ? 502 : 500;

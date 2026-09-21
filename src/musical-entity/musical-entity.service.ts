@@ -8,6 +8,7 @@ import {
 } from "../integrations/deezer/deezer.client.js";
 import type { MusicalSearchResult } from "./dtos/search-result.dto.js";
 import type { ArtistDetail } from "./dtos/artist-detail.dto.js";
+import type { AlbumDetail } from "./dtos/album-detail.dto.js";
 import type { EntityInteractionsResult } from "./dtos/entity-interactions-result.dto.js";
 
 const deezerClient = new DeezerClient();
@@ -19,6 +20,11 @@ export type SearchResult =
 
 export type ArtistDetailResult =
   | { ok: true; data: ArtistDetail }
+  | { ok: false; error: "DEEZER_ERROR" }
+  | { ok: false; error: "DB_ERROR" };
+
+export type AlbumDetailResult =
+  | { ok: true; data: AlbumDetail }
   | { ok: false; error: "DEEZER_ERROR" }
   | { ok: false; error: "DB_ERROR" };
 
@@ -141,6 +147,59 @@ export async function getArtistDetail(
         cover_big: album.cover_big,
         release_date: album.release_date,
       })),
+    },
+  };
+}
+
+export async function getAlbumDetail(
+  externalId: string,
+): Promise<AlbumDetailResult> {
+  let album;
+
+  try {
+    album = await deezerClient.getAlbum(externalId);
+  } catch {
+    return { ok: false, error: "DEEZER_ERROR" };
+  }
+
+  const deezerTracks = album.tracks?.data ?? [];
+
+  let trackStats: Map<string, EntityStats>;
+  let albumStats: Map<string, EntityStats>;
+
+  try {
+    [trackStats, albumStats] = await Promise.all([
+      fetchEntityStats({ type: "track", results: deezerTracks }),
+      fetchEntityStats({ type: "album", results: [{ id: album.id }] }),
+    ]);
+  } catch {
+    return { ok: false, error: "DB_ERROR" };
+  }
+
+  const songs = deezerTracks.map((track) => {
+    const stats = trackStats.get(String(track.id));
+    return {
+      externalId: String(track.id),
+      title: track.title,
+      duration: track.duration,
+      averageRating: stats?.averageRating ?? null,
+    };
+  });
+
+  const albumAverage = albumStats.get(String(album.id))?.averageRating ?? null;
+
+  return {
+    ok: true,
+    data: {
+      externalId: String(album.id),
+      title: album.title,
+      cover_big: album.cover_big,
+      cover_medium: album.cover_medium,
+      release_date: album.release_date,
+      artist: { id: album.artist?.id, name: album.artist?.name ?? "" },
+      averageRating: albumAverage,
+      duration: songs.reduce((acc, song) => acc + song.duration, 0),
+      songs,
     },
   };
 }

@@ -72,6 +72,10 @@ export class DeezerClient {
     return this.get<DeezerArtistDTO>(`/artist/${id}`);
   }
 
+  async getAlbum(id: number | string): Promise<DeezerAlbumDTO> {
+    return this.get<DeezerAlbumDTO>(`/album/${id}`);
+  }
+
   async getArtistTopTracks(
     id: number | string,
     limit = 50,
