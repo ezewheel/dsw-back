@@ -22,8 +22,8 @@ export class Interaction {
   @ManyToOne()
   musicalEntity!: MusicalEntity;
 
-  @Property({ nullable: false })
-  value!: string;
+  @Property({ nullable: false, type: "decimal", precision: 3, scale: 2 })
+  value!: number;
 
   @Property({ nullable: true })
   content?: string;

@@ -4,6 +4,7 @@ import {
   getArtistDetail as getArtistDetailService,
   getAlbumDetail as getAlbumDetailService,
   getEntityInteractions as getEntityInteractionsService,
+  getEntityReviews as getEntityReviewsService,
 } from "./musical-entity.service.js";
 import type { SearchRequestDTO } from "./dtos/search-request.dto.js";
 import type { ArtistParamsDTO } from "./dtos/artist-params.dto.js";
@@ -55,6 +56,17 @@ export async function getAlbumDetail(req: Request, res: Response) {
         ? "Error al consultar a Deezer"
         : "Error al consultar la base de datos";
     return res.status(status).json({ message });
+  }
+
+  return res.status(200).json(result.data);
+}
+
+export async function getEntityReviews(req: Request, res: Response) {
+  const { type, id } = req.params as unknown as EntityInteractionsParamsDTO;
+  const result = await getEntityReviewsService({ type, id });
+
+  if (!result.ok) {
+    return res.status(500).json({ message: "Error al consultar la base de datos" });
   }
 
   return res.status(200).json(result.data);
