@@ -5,16 +5,19 @@ import { AlbumParamsDTO } from "./dtos/album-params.dto.js";
 import { EntityReviewsParamsDTO } from "./dtos/entity-reviews-params.dto.js";
 import { EntityReviewsQueryDTO } from "./dtos/entity-reviews-query.dto.js";
 import { LatestReviewsQueryDTO } from "./dtos/latest-reviews-query.dto.js";
+import { CreateReviewDTO } from "./dtos/create-review.dto.js";
 import {
   search,
   getArtistDetail,
   getAlbumDetail,
   getEntityReviews,
+  createReview,
   getLatestReviews,
   getLatestReviewedSongs,
   getTopRated,
 } from "./musical-entity.controller.js";
 import { validateDTO } from "../shared/middlewares/validate-dto.middleware.js";
+import { requireAuth } from "../shared/middlewares/require-auth.middleware.js";
 
 const router = Router();
 
@@ -45,6 +48,13 @@ router.get(
   validateDTO(EntityReviewsParamsDTO, "params"),
   validateDTO(EntityReviewsQueryDTO, "query"),
   getEntityReviews,
+);
+router.post(
+  "/:type/:id/reviews",
+  requireAuth,
+  validateDTO(EntityReviewsParamsDTO, "params"),
+  validateDTO(CreateReviewDTO, "body"),
+  createReview,
 );
 
 export default router;

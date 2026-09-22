@@ -1,6 +1,7 @@
 import { orm } from "../shared/db/orm.js";
 import { MusicalEntity } from "./musical-entity.entity.js";
 import { Interaction } from "../interaction/interaction.entity.js";
+import { User } from "../user/user.entity.js";
 import {
   DeezerClient,
   type DeezerSearchResult,
@@ -37,6 +38,10 @@ export type AlbumDetailResult =
 export type EntityReviewsResult =
   | { ok: true; data: EntityReviewsPaginated }
   | { ok: false; error: "DB_ERROR" };
+
+export type CreateReviewResult =
+  | { ok: true; data: EntityReview; created: boolean }
+  | { ok: false; error: "USER_NOT_FOUND" | "DB_ERROR" };
 
 export type LatestReviewsResult =
   | { ok: true; data: LatestReview[] }
@@ -312,6 +317,112 @@ export async function getEntityReviews(input: {
   } catch {
     return { ok: false, error: "DB_ERROR" };
   }
+}
+
+export async function createReview(input: {
+  type: "track" | "album" | "artist";
+  id: string;
+  userId: number;
+  value: number;
+  content?: string;
+}): Promise<CreateReviewResult> {
+  const em = orm.em;
+
+  try {
+    let entity = await em.findOne(MusicalEntity, {
+      type: input.type,
+      deezerId: Number(input.id),
+    });
+
+    if (!entity) {
+      entity = em.create(MusicalEntity, {
+        type: input.type,
+        deezerId: Number(input.id),
+        reviewsCount: 0,
+        ratingsCount: 0,
+        averageRating: 0,
+      });
+    }
+
+    const user = await em.findOne(User, { id: input.userId });
+
+    if (!user) {
+      return { ok: false, error: "USER_NOT_FOUND" };
+    }
+
+    const content = input.content?.trim() || undefined;
+
+    let interaction = await em.findOne(Interaction, {
+      user,
+      musicalEntity: entity,
+    });
+
+    let created = false;
+
+    if (interaction) {
+      interaction.deletedAt = null as unknown as Date | undefined;
+      interaction.value = input.value;
+      if (content !== undefined) {
+        interaction.content = content;
+      }
+      interaction.updatedAt = new Date();
+      em.persist(interaction);
+    } else {
+      interaction = em.create(Interaction, {
+        user,
+        musicalEntity: entity,
+        value: input.value,
+        content,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      created = true;
+    }
+
+    await em.flush();
+    await refreshEntityStats(entity);
+
+    return {
+      ok: true,
+      created,
+      data: {
+        id: interaction.id!,
+        user: {
+          id: user.id!,
+          nickname: user.nickname,
+        },
+        value: interaction.value,
+        content: interaction.content ?? "",
+        createdAt: interaction.createdAt.toISOString(),
+        updatedAt: interaction.updatedAt.toISOString(),
+      },
+    };
+  } catch {
+    return { ok: false, error: "DB_ERROR" };
+  }
+}
+
+async function refreshEntityStats(entity: MusicalEntity): Promise<void> {
+  const interactions = await orm.em.find(Interaction, {
+    musicalEntity: entity,
+    deletedAt: null,
+  });
+
+  const withContent = interactions.filter(
+    (interaction) => interaction.content !== null && interaction.content !== undefined,
+  );
+
+  entity.ratingsCount = interactions.length;
+  entity.reviewsCount = withContent.length;
+  entity.averageRating =
+    interactions.length === 0
+      ? 0
+      : interactions.reduce(
+          (sum, interaction) => sum + Number(interaction.value),
+          0,
+        ) / interactions.length;
+
+  await orm.em.persist(entity).flush();
 }
 
 export async function getArtistDetail(
