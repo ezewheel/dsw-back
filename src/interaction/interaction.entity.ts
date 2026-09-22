@@ -25,7 +25,7 @@ export class Interaction {
   @Property({ nullable: false, type: "decimal", precision: 3, scale: 2 })
   value!: number;
 
-  @Property({ nullable: true })
+  @Property({ nullable: true, type: "text" })
   content?: string;
 
   @Property({ nullable: false })
