@@ -4,7 +4,7 @@ import { IsInt, IsOptional, Max, Min } from "class-validator";
 const toNumber = ({ value }: { value: unknown }) =>
   typeof value === "string" && value.trim() !== "" ? Number(value) : value;
 
-export class EntityInteractionsQueryDTO {
+export class EntityReviewsQueryDTO {
   @IsOptional()
   @Transform(toNumber)
   @IsInt({ message: "La página debe ser un número entero" })

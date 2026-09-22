@@ -9,8 +9,13 @@ import {
 import type { MusicalSearchResult } from "./dtos/search-result.dto.js";
 import type { ArtistDetail } from "./dtos/artist-detail.dto.js";
 import type { AlbumDetail } from "./dtos/album-detail.dto.js";
-import type { EntityInteractionsResult } from "./dtos/entity-interactions-result.dto.js";
-import type { EntityReview } from "./dtos/entity-reviews-result.dto.js";
+import type {
+  EntityReview,
+  EntityReviewsResult as EntityReviewsPaginated,
+} from "./dtos/entity-reviews-result.dto.js";
+import type { LatestReview } from "./dtos/latest-reviews.dto.js";
+import type { TopRated } from "./dtos/top-rated.dto.js";
+import type { ReviewedSong } from "./dtos/latest-reviewed-songs.dto.js";
 
 const deezerClient = new DeezerClient();
 
@@ -29,64 +34,229 @@ export type AlbumDetailResult =
   | { ok: false; error: "DEEZER_ERROR" }
   | { ok: false; error: "DB_ERROR" };
 
-export type EntityInteractionsServiceResult =
-  | { ok: true; data: EntityInteractionsResult }
-  | { ok: false; error: "DB_ERROR" };
-
 export type EntityReviewsResult =
-  | { ok: true; data: EntityReview[] }
+  | { ok: true; data: EntityReviewsPaginated }
   | { ok: false; error: "DB_ERROR" };
 
-export async function getEntityReviews(input: {
-  type: "track" | "album" | "artist";
-  id: string;
-}): Promise<EntityReviewsResult> {
+export type LatestReviewsResult =
+  | { ok: true; data: LatestReview[] }
+  | { ok: false; error: "DB_ERROR" };
+
+export type TopRatedResult =
+  | { ok: true; data: TopRated }
+  | { ok: false; error: "DB_ERROR" };
+
+export type LatestReviewedSongsResult =
+  | { ok: true; data: ReviewedSong[] }
+  | { ok: false; error: "DB_ERROR" };
+
+export async function getLatestReviewedSongs(
+  limit: number,
+): Promise<LatestReviewedSongsResult> {
   try {
-    const entity = await orm.em.findOne(MusicalEntity, {
-      type: input.type,
-      deezerId: Number(input.id),
-    });
-
-    if (!entity) {
-      return { ok: true, data: [] };
-    }
-
     const interactions = await orm.em.find(
       Interaction,
-      { musicalEntity: entity, deletedAt: null, content: { $ne: null } },
       {
-        populate: ["user"],
-        orderBy: { createdAt: "DESC" },
+        deletedAt: null,
+        value: { $gt: 0 },
+        musicalEntity: { type: "track" },
       },
+      {
+        populate: ["musicalEntity"],
+        orderBy: { createdAt: "DESC" },
+        limit: Math.max(limit * 5, 50),
+      },
+    );
+
+    const seen = new Set<string>();
+    const songs: ReviewedSong[] = [];
+    for (const interaction of interactions) {
+      const entity = interaction.musicalEntity;
+      const id = String(entity.deezerId);
+      if (seen.has(id)) continue;
+      seen.add(id);
+
+      try {
+        const track = await deezerClient.getTrack(id);
+        songs.push({
+          externalId: id,
+          title: track.title,
+          artist: track.artist?.name ?? null,
+          album: track.album?.title ?? null,
+          duration: track.duration ?? null,
+          cover: track.album?.cover_medium ?? null,
+          averageRating: entity.averageRating || null,
+          reviewsCount: entity.ratingsCount,
+          reviewedAt: interaction.createdAt.toISOString(),
+        });
+      } catch {
+        // Canción sin datos en Deezer: no entra al listado.
+      }
+
+      if (songs.length === limit) break;
+    }
+
+    return { ok: true, data: songs };
+  } catch {
+    return { ok: false, error: "DB_ERROR" };
+  }
+}
+
+export async function getTopRated(): Promise<TopRatedResult> {
+  try {
+    const lists = await Promise.all(
+      (["artist", "album", "track"] as const).map(async (type) => {
+        const entities = await orm.em.find(
+          MusicalEntity,
+          { type, averageRating: { $gt: 0 } },
+          {
+            orderBy: { averageRating: "DESC", ratingsCount: "DESC" },
+            limit: 5,
+          },
+        );
+
+        const items: TopRated["artists"] = [];
+        for (const entity of entities) {
+          try {
+            const display = await fetchEntityDisplay(
+              type,
+              String(entity.deezerId),
+            );
+            items.push({
+              externalId: String(entity.deezerId),
+              type,
+              title: display.title,
+              cover: display.cover,
+              artist: display.artist,
+              averageRating: entity.averageRating,
+              reviewsCount: entity.ratingsCount,
+            });
+          } catch {
+            // Entidad sin datos en Deezer: no entra en el listado.
+          }
+        }
+        return items;
+      }),
     );
 
     return {
       ok: true,
-      data: interactions.map((interaction) => ({
-        id: interaction.id,
-        user: {
-          id: interaction.user.id!,
-          nickname: interaction.user.nickname,
-        },
-        value: interaction.value,
-        content: interaction.content!,
-        createdAt: interaction.createdAt.toISOString(),
-        updatedAt: interaction.updatedAt.toISOString(),
-      })),
+      data: {
+        artists: lists[0],
+        albums: lists[1],
+        tracks: lists[2],
+      },
     };
   } catch {
     return { ok: false, error: "DB_ERROR" };
   }
 }
 
-export async function getEntityInteractions(input: {
+export async function getLatestReviews(limit: number): Promise<LatestReviewsResult> {
+  try {
+    const interactions = await orm.em.find(
+      Interaction,
+      { deletedAt: null, content: { $ne: null } },
+      {
+        populate: ["user", "musicalEntity"],
+        orderBy: { createdAt: "DESC" },
+        limit,
+      },
+    );
+
+    const uniqueEntities = new Map<string, MusicalEntity>();
+    for (const interaction of interactions) {
+      const entity = interaction.musicalEntity;
+      uniqueEntities.set(`${entity.type}:${entity.deezerId}`, entity);
+    }
+
+    const entityInfo = new Map<string, LatestReview["entity"] | null>();
+    await Promise.all(
+      [...uniqueEntities.values()].map(async (entity) => {
+        const key = `${entity.type}:${entity.deezerId}`;
+        try {
+          entityInfo.set(key, await fetchEntityDisplay(entity.type, String(entity.deezerId)));
+        } catch {
+          entityInfo.set(key, null);
+        }
+      }),
+    );
+
+    return {
+      ok: true,
+      data: interactions.map((interaction) => {
+        const entity = interaction.musicalEntity;
+        const key = `${entity.type}:${entity.deezerId}`;
+        const info = entityInfo.get(key);
+
+        return {
+          id: interaction.id,
+          user: {
+            id: interaction.user.id!,
+            nickname: interaction.user.nickname,
+          },
+          value: interaction.value,
+          content: interaction.content!,
+          createdAt: interaction.createdAt.toISOString(),
+          updatedAt: interaction.updatedAt.toISOString(),
+          entity:
+            info ?? {
+              externalId: String(entity.deezerId),
+              type: entity.type,
+              title: null,
+              cover: null,
+              artist: null,
+            },
+        };
+      }),
+    };
+  } catch {
+    return { ok: false, error: "DB_ERROR" };
+  }
+}
+
+async function fetchEntityDisplay(
+  type: "track" | "album" | "artist",
+  externalId: string,
+): Promise<LatestReview["entity"]> {
+  if (type === "artist") {
+    const artist = await deezerClient.getArtist(externalId);
+    return {
+      externalId,
+      type,
+      title: artist.name,
+      cover: artist.picture_big,
+      artist: null,
+    };
+  }
+
+  if (type === "album") {
+    const album = await deezerClient.getAlbum(externalId);
+    return {
+      externalId,
+      type,
+      title: album.title,
+      cover: album.cover_big,
+      artist: album.artist?.name ?? null,
+    };
+  }
+
+  const track = await deezerClient.getTrack(externalId);
+  return {
+    externalId,
+    type,
+    title: track.title,
+    cover: track.album?.cover_medium ?? null,
+    artist: track.artist?.name ?? null,
+  };
+}
+
+export async function getEntityReviews(input: {
   type: "track" | "album" | "artist";
   id: string;
   page: number;
   pageSize: number;
-}): Promise<EntityInteractionsServiceResult> {
-  const externalId = input.id;
-
+}): Promise<EntityReviewsResult> {
   try {
     const entity = await orm.em.findOne(MusicalEntity, {
       type: input.type,
@@ -97,19 +267,19 @@ export async function getEntityInteractions(input: {
       return {
         ok: true,
         data: {
-          externalId,
-          items: [],
+          externalId: input.id,
           page: input.page,
           pageSize: input.pageSize,
           total: 0,
           totalPages: 0,
+          items: [],
         },
       };
     }
 
     const [interactions, total] = await orm.em.findAndCount(
       Interaction,
-      { musicalEntity: entity, deletedAt: null },
+      { musicalEntity: entity, deletedAt: null, content: { $ne: null } },
       {
         populate: ["user"],
         orderBy: { createdAt: "DESC" },
@@ -121,7 +291,11 @@ export async function getEntityInteractions(input: {
     return {
       ok: true,
       data: {
-        externalId,
+        externalId: input.id,
+        page: input.page,
+        pageSize: input.pageSize,
+        total,
+        totalPages: Math.ceil(total / input.pageSize),
         items: interactions.map((interaction) => ({
           id: interaction.id,
           user: {
@@ -129,13 +303,10 @@ export async function getEntityInteractions(input: {
             nickname: interaction.user.nickname,
           },
           value: interaction.value,
-          content: interaction.content ?? null,
+          content: interaction.content!,
           createdAt: interaction.createdAt.toISOString(),
+          updatedAt: interaction.updatedAt.toISOString(),
         })),
-        page: input.page,
-        pageSize: input.pageSize,
-        total,
-        totalPages: Math.ceil(total / input.pageSize),
       },
     };
   } catch {

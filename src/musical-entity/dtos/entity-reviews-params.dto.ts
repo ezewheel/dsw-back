@@ -1,6 +1,6 @@
 import { IsIn, IsString, Matches } from "class-validator";
 
-export class EntityInteractionsParamsDTO {
+export class EntityReviewsParamsDTO {
   @IsIn(["track", "album", "artist"], {
     message: "El tipo debe ser track, album o artist",
   })
