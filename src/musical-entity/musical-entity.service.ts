@@ -100,9 +100,13 @@ export async function getArtistDetail(
   }
 
   let ratings: Map<string, EntityStats>;
+  let albumRatings: Map<string, EntityStats>;
 
   try {
-    ratings = await fetchEntityStats({ type: "track", results: topTracks });
+    [ratings, albumRatings] = await Promise.all([
+      fetchEntityStats({ type: "track", results: topTracks }),
+      fetchEntityStats({ type: "album", results: albums }),
+    ]);
   } catch {
     return { ok: false, error: "DB_ERROR" };
   }
@@ -133,6 +137,8 @@ export async function getArtistDetail(
         title: album.title,
         cover_big: album.cover_big,
         release_date: album.release_date,
+        averageRating:
+          albumRatings.get(String(album.id))?.averageRating ?? null,
       })),
     },
   };

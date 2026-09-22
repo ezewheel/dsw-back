@@ -13,6 +13,7 @@ export type ArtistAlbum = {
   title: string;
   cover_big: string;
   release_date: string;
+  averageRating: number | null;
 };
 
 export type ArtistDetail = {
