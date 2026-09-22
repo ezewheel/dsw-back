@@ -117,7 +117,8 @@ export async function getArtistDetail(
       },
       averageRating: ratings.get(String(track.id))?.averageRating ?? null,
     }))
-    .sort((a, b) => (b.averageRating ?? -1) - (a.averageRating ?? -1))
+    .filter((track) => track.averageRating !== null)
+    .sort((a, b) => b.averageRating! - a.averageRating!)
     .slice(0, 5);
 
   return {
