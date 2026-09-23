@@ -9,6 +9,7 @@ import { fetchEntityDisplay } from "../integrations/deezer/entity-display.js";
 import type { MusicalSearchResult } from "./dtos/search-result.dto.js";
 import type { ArtistDetail } from "./dtos/artist-detail.dto.js";
 import type { AlbumDetail } from "./dtos/album-detail.dto.js";
+import type { TrackDetail } from "./dtos/track-detail.dto.js";
 import type { TopRated } from "./dtos/top-rated.dto.js";
 
 const deezerClient = new DeezerClient();
@@ -27,6 +28,10 @@ export type AlbumDetailResult =
   | { ok: true; data: AlbumDetail }
   | { ok: false; error: "DEEZER_ERROR" }
   | { ok: false; error: "DB_ERROR" };
+
+export type TrackDetailResult =
+  | { ok: true; data: TrackDetail }
+  | { ok: false; error: "DEEZER_ERROR" };
 
 export type TopRatedResult =
   | { ok: true; data: TopRated }
@@ -193,6 +198,32 @@ export async function getAlbumDetail(
       averageRating: albumAverage,
       duration: songs.reduce((acc, song) => acc + song.duration, 0),
       songs,
+    },
+  };
+}
+
+export async function getTrackDetail(
+  externalId: string,
+): Promise<TrackDetailResult> {
+  let track;
+
+  try {
+    track = await deezerClient.getTrack(externalId);
+  } catch {
+    return { ok: false, error: "DEEZER_ERROR" };
+  }
+
+  return {
+    ok: true,
+    data: {
+      externalId: String(track.id),
+      title: track.title,
+      duration: track.duration,
+      artist: { name: track.artist?.name ?? "" },
+      album: {
+        title: track.album?.title ?? "",
+        cover_big: track.album?.cover_big ?? track.album?.cover_medium ?? "",
+      },
     },
   };
 }

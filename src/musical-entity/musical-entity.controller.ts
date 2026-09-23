@@ -3,11 +3,13 @@ import {
   search as searchService,
   getArtistDetail as getArtistDetailService,
   getAlbumDetail as getAlbumDetailService,
+  getTrackDetail as getTrackDetailService,
   getTopRated as getTopRatedService,
 } from "./musical-entity.service.js";
 import type { SearchRequestDTO } from "./dtos/search-request.dto.js";
 import type { ArtistParamsDTO } from "./dtos/artist-params.dto.js";
 import type { AlbumParamsDTO } from "./dtos/album-params.dto.js";
+import type { TrackParamsDTO } from "./dtos/track-params.dto.js";
 
 export async function search(req: Request, res: Response) {
   const { query, type, limit, index } =
@@ -53,6 +55,19 @@ export async function getAlbumDetail(req: Request, res: Response) {
         ? "Error al consultar a Deezer"
         : "Error al consultar la base de datos";
     return res.status(status).json({ message });
+  }
+
+  return res.status(200).json(result.data);
+}
+
+export async function getTrackDetail(req: Request, res: Response) {
+  const { id } = req.params as unknown as TrackParamsDTO;
+  const result = await getTrackDetailService(id);
+
+  if (!result.ok) {
+    return res
+      .status(502)
+      .json({ message: "Error al consultar a Deezer" });
   }
 
   return res.status(200).json(result.data);
