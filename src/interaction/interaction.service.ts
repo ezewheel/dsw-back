@@ -2,8 +2,8 @@ import { orm } from "../shared/db/orm.js";
 import { MusicalEntity } from "../musical-entity/musical-entity.entity.js";
 import { Interaction } from "./interaction.entity.js";
 import { User } from "../user/user.entity.js";
-import { DeezerClient } from "../integrations/deezer/deezer.client.js";
-import { fetchEntityDisplay } from "../integrations/deezer/entity-display.js";
+import { DeezerClient } from "../deezer/deezer.client.js";
+import { fetchEntityDisplay } from "../deezer/entity-display.js";
 import { HttpError } from "../shared/errors.js";
 import type {
   EntityReview,

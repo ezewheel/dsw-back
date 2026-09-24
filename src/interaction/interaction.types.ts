@@ -1,4 +1,4 @@
-import type { EntityDisplay } from "../integrations/deezer/entity-display.js";
+import type { EntityDisplay } from "../deezer/entity-display.js";
 
 export type EntityReview = {
   id: number;

@@ -5,9 +5,9 @@ import { orm } from "./shared/db/orm.js";
 import { config } from "./shared/config.js";
 import { errorHandler } from "./shared/errors.js";
 import { RequestContext } from "@mikro-orm/core";
-import authRouter from "./auth/auth.router.js";
+import authRouter from "./auth/auth.routes.js";
 import musicalEntityRouter from "./musical-entity/musical-entity.routes.js";
-import interactionRouter from "./interaction/interaction.router.js";
+import interactionRouter from "./interaction/interaction.routes.js";
 
 const app = express();
 

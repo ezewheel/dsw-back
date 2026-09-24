@@ -3,8 +3,8 @@ import type {
   DeezerAlbumDTO,
   DeezerArtistDTO,
   DeezerAlbumListItemDTO,
-} from "./dtos/deezer-responses.dto.js";
-import { HttpError } from "../../shared/errors.js";
+} from "./deezer.types.js";
+import { HttpError } from "../shared/errors.js";
 
 const DEEZER_BASE_URL = "https://api.deezer.com";
 // Deezer responde 200 con este código de error cuando el id no existe.

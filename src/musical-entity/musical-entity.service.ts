@@ -4,8 +4,8 @@ import {
   DeezerClient,
   type DeezerSearchResult,
   type DeezerSearchType,
-} from "../integrations/deezer/deezer.client.js";
-import { fetchEntityDisplay } from "../integrations/deezer/entity-display.js";
+} from "../deezer/deezer.client.js";
+import { fetchEntityDisplay } from "../deezer/entity-display.js";
 import type {
   AlbumDetail,
   ArtistDetail,
