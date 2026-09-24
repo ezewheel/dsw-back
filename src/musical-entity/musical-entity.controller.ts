@@ -6,8 +6,7 @@ import {
   getTrackDetail as getTrackDetailService,
   getTopRated as getTopRatedService,
 } from "./musical-entity.service.js";
-import type { SearchRequestDTO } from "./dtos/search-request.dto.js";
-import type { DeezerIdParamsDTO } from "./dtos/deezer-id-params.dto.js";
+import type { DeezerIdParamsDTO, SearchRequestDTO } from "./musical-entity.dto.js";
 
 export async function search(req: Request, res: Response) {
   res.json(await searchService(req.query as unknown as SearchRequestDTO));

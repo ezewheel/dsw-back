@@ -1,6 +1,5 @@
 import { Router } from "express";
-import { SearchRequestDTO } from "./dtos/search-request.dto.js";
-import { DeezerIdParamsDTO } from "./dtos/deezer-id-params.dto.js";
+import { DeezerIdParamsDTO, SearchRequestDTO } from "./musical-entity.dto.js";
 import {
   search,
   getArtistDetail,

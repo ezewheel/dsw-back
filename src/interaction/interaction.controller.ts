@@ -5,10 +5,12 @@ import {
   getLatestReviews as getLatestReviewsService,
   getLatestReviewedSongs as getLatestReviewedSongsService,
 } from "./interaction.service.js";
-import type { EntityReviewsParamsDTO } from "./dtos/entity-reviews-params.dto.js";
-import type { EntityReviewsQueryDTO } from "./dtos/entity-reviews-query.dto.js";
-import type { LatestReviewsQueryDTO } from "./dtos/latest-reviews-query.dto.js";
-import type { CreateReviewDTO } from "./dtos/create-review.dto.js";
+import type {
+  CreateReviewDTO,
+  EntityReviewsParamsDTO,
+  EntityReviewsQueryDTO,
+  LatestReviewsQueryDTO,
+} from "./interaction.dto.js";
 
 export async function getEntityReviews(req: Request, res: Response) {
   const { type, id } = req.params as unknown as EntityReviewsParamsDTO;

@@ -1,5 +1,10 @@
 import { Type } from "class-transformer";
-import { IsIn, IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+import { IsIn, IsInt, IsOptional, IsString, Matches, Max, Min } from "class-validator";
+
+export class DeezerIdParamsDTO {
+  @Matches(/^\d+$/, { message: "El id debe ser numérico" })
+  id!: string;
+}
 
 export class SearchRequestDTO {
   @IsString({ message: "La consulta debe ser una cadena de texto" })

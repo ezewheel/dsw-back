@@ -8,9 +8,9 @@ import { HttpError } from "../shared/errors.js";
 import type {
   EntityReview,
   EntityReviewsResult as EntityReviewsPaginated,
-} from "./dtos/entity-reviews-result.dto.js";
-import type { LatestReview } from "./dtos/latest-reviews.dto.js";
-import type { ReviewedSong } from "./dtos/latest-reviewed-songs.dto.js";
+  LatestReview,
+  ReviewedSong,
+} from "./interaction.types.js";
 
 const deezerClient = new DeezerClient();
 

@@ -4,8 +4,7 @@ import {
   login as loginService,
   register as registerService,
 } from "./auth.service.js";
-import type { LoginRequestDTO } from "./dtos/login-request.dto.js";
-import type { RegisterRequestDTO } from "./dtos/register-request.dto.js";
+import type { LoginRequestDTO, RegisterRequestDTO } from "./auth.dto.js";
 
 export async function login(req: Request, res: Response) {
   res.json(await loginService(req.body as LoginRequestDTO));

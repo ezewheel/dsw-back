@@ -1,8 +1,10 @@
 import { Router } from "express";
-import { EntityReviewsParamsDTO } from "./dtos/entity-reviews-params.dto.js";
-import { EntityReviewsQueryDTO } from "./dtos/entity-reviews-query.dto.js";
-import { LatestReviewsQueryDTO } from "./dtos/latest-reviews-query.dto.js";
-import { CreateReviewDTO } from "./dtos/create-review.dto.js";
+import {
+  CreateReviewDTO,
+  EntityReviewsParamsDTO,
+  EntityReviewsQueryDTO,
+  LatestReviewsQueryDTO,
+} from "./interaction.dto.js";
 import {
   getEntityReviews,
   saveReview,

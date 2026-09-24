@@ -6,11 +6,13 @@ import {
   type DeezerSearchType,
 } from "../integrations/deezer/deezer.client.js";
 import { fetchEntityDisplay } from "../integrations/deezer/entity-display.js";
-import type { MusicalSearchResult } from "./dtos/search-result.dto.js";
-import type { ArtistDetail } from "./dtos/artist-detail.dto.js";
-import type { AlbumDetail } from "./dtos/album-detail.dto.js";
-import type { TrackDetail } from "./dtos/track-detail.dto.js";
-import type { TopRated } from "./dtos/top-rated.dto.js";
+import type {
+  AlbumDetail,
+  ArtistDetail,
+  MusicalSearchResult,
+  TopRated,
+  TrackDetail,
+} from "./musical-entity.types.js";
 
 const deezerClient = new DeezerClient();
 

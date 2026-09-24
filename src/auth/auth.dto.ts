@@ -1,5 +1,5 @@
 import { Transform } from "class-transformer";
-import { IsEmail, IsString, MaxLength, MinLength } from "class-validator";
+import { IsEmail, IsNotEmpty, IsString, MaxLength, MinLength } from "class-validator";
 
 const toTrimmedLowercase = ({ value }: { value: unknown }) =>
   typeof value === "string" ? value.trim().toLowerCase() : value;
@@ -14,4 +14,14 @@ export class LoginRequestDTO {
   // bcrypt ignora todo lo que pase de 72 bytes.
   @MaxLength(72, { message: "La contraseña no puede superar los 72 caracteres" })
   password!: string;
+}
+
+const toTrimmed = ({ value }: { value: unknown }) =>
+  typeof value === "string" ? value.trim() : value;
+
+export class RegisterRequestDTO extends LoginRequestDTO {
+  @Transform(toTrimmed)
+  @IsString({ message: "El nickname debe ser un string" })
+  @IsNotEmpty({ message: "El nickname no puede estar vacío" })
+  nickname!: string;
 }
