@@ -14,110 +14,59 @@ import type { TopRated } from "./dtos/top-rated.dto.js";
 
 const deezerClient = new DeezerClient();
 
-export type SearchResult =
-  | { ok: true; results: MusicalSearchResult }
-  | { ok: false; error: "DEEZER_ERROR" }
-  | { ok: false; error: "DB_ERROR" };
+export async function getTopRated(): Promise<TopRated> {
+  const [artists, albums, tracks] = await Promise.all(
+    (["artist", "album", "track"] as const).map(async (type) => {
+      const entities = await orm.em.find(
+        MusicalEntity,
+        { type, averageRating: { $gt: 0 } },
+        {
+          orderBy: { averageRating: "DESC", ratingsCount: "DESC" },
+          limit: 5,
+        },
+      );
 
-export type ArtistDetailResult =
-  | { ok: true; data: ArtistDetail }
-  | { ok: false; error: "DEEZER_ERROR" }
-  | { ok: false; error: "DB_ERROR" };
-
-export type AlbumDetailResult =
-  | { ok: true; data: AlbumDetail }
-  | { ok: false; error: "DEEZER_ERROR" }
-  | { ok: false; error: "DB_ERROR" };
-
-export type TrackDetailResult =
-  | { ok: true; data: TrackDetail }
-  | { ok: false; error: "DEEZER_ERROR" }
-  | { ok: false; error: "DB_ERROR" };
-
-export type TopRatedResult =
-  | { ok: true; data: TopRated }
-  | { ok: false; error: "DB_ERROR" };
-
-export async function getTopRated(): Promise<TopRatedResult> {
-  try {
-    const lists = await Promise.all(
-      (["artist", "album", "track"] as const).map(async (type) => {
-        const entities = await orm.em.find(
-          MusicalEntity,
-          { type, averageRating: { $gt: 0 } },
-          {
-            orderBy: { averageRating: "DESC", ratingsCount: "DESC" },
-            limit: 5,
-          },
-        );
-
-        const items: TopRated["artists"] = [];
-        for (const entity of entities) {
-          try {
-            const display = await fetchEntityDisplay(
-              type,
-              String(entity.deezerId),
-            );
-            items.push({
-              externalId: String(entity.deezerId),
-              type,
-              title: display.title,
-              cover: display.cover,
-              artist: display.artist,
-              averageRating: entity.averageRating,
-              reviewsCount: entity.ratingsCount,
-            });
-          } catch {
-            // Entidad sin datos en Deezer: no entra en el listado.
-          }
+      const items: TopRated["artists"] = [];
+      for (const entity of entities) {
+        try {
+          const display = await fetchEntityDisplay(
+            type,
+            String(entity.deezerId),
+          );
+          items.push({
+            externalId: String(entity.deezerId),
+            type,
+            title: display.title,
+            cover: display.cover,
+            artist: display.artist,
+            averageRating: entity.averageRating,
+            reviewsCount: entity.ratingsCount,
+          });
+        } catch {
+          // Entidad sin datos en Deezer: no entra en el listado.
         }
-        return items;
-      }),
-    );
+      }
+      return items;
+    }),
+  );
 
-    return {
-      ok: true,
-      data: {
-        artists: lists[0],
-        albums: lists[1],
-        tracks: lists[2],
-      },
-    };
-  } catch {
-    return { ok: false, error: "DB_ERROR" };
-  }
+  return { artists, albums, tracks };
 }
 
 export async function getArtistDetail(
   externalId: string,
-): Promise<ArtistDetailResult> {
-  let artist;
-  let topTracks;
-  let albums;
+): Promise<ArtistDetail> {
+  const [artist, topTracks, albums] = await Promise.all([
+    deezerClient.getArtist(externalId),
+    deezerClient.getArtistTopTracks(externalId),
+    deezerClient.getArtistAlbums(externalId),
+  ]);
 
-  try {
-    [artist, topTracks, albums] = await Promise.all([
-      deezerClient.getArtist(externalId),
-      deezerClient.getArtistTopTracks(externalId),
-      deezerClient.getArtistAlbums(externalId),
-    ]);
-  } catch {
-    return { ok: false, error: "DEEZER_ERROR" };
-  }
-
-  let ratings: Map<string, EntityStats>;
-  let albumRatings: Map<string, EntityStats>;
-  let artistRating: EntityRating;
-
-  try {
-    [ratings, albumRatings, artistRating] = await Promise.all([
-      fetchEntityStats({ type: "track", results: topTracks }),
-      fetchEntityStats({ type: "album", results: albums }),
-      findEntityRating("artist", artist.id),
-    ]);
-  } catch {
-    return { ok: false, error: "DB_ERROR" };
-  }
+  const [ratings, albumRatings, artistRating] = await Promise.all([
+    fetchEntityStats({ type: "track", results: topTracks }),
+    fetchEntityStats({ type: "album", results: albums }),
+    findEntityRating("artist", artist.id),
+  ]);
 
   const topRatedTracks = topTracks
     .map((track) => ({
@@ -135,111 +84,65 @@ export async function getArtistDetail(
     .slice(0, 5);
 
   return {
-    ok: true,
-    data: {
-      externalId: String(artist.id),
-      name: artist.name,
-      picture_big: artist.picture_big,
-      ...artistRating,
-      topTracks: topRatedTracks,
-      albums: albums.map((album) => ({
-        externalId: String(album.id),
-        title: album.title,
-        cover_big: album.cover_big,
-        release_date: album.release_date,
-        averageRating:
-          albumRatings.get(String(album.id))?.averageRating ?? null,
-      })),
-    },
-  };
-}
-
-export async function getAlbumDetail(
-  externalId: string,
-): Promise<AlbumDetailResult> {
-  let album;
-
-  try {
-    album = await deezerClient.getAlbum(externalId);
-  } catch {
-    return { ok: false, error: "DEEZER_ERROR" };
-  }
-
-  const deezerTracks = album.tracks?.data ?? [];
-
-  let trackStats: Map<string, EntityStats>;
-  let albumStats: Map<string, EntityStats>;
-
-  try {
-    [trackStats, albumStats] = await Promise.all([
-      fetchEntityStats({ type: "track", results: deezerTracks }),
-      fetchEntityStats({ type: "album", results: [{ id: album.id }] }),
-    ]);
-  } catch {
-    return { ok: false, error: "DB_ERROR" };
-  }
-
-  const songs = deezerTracks.map((track) => {
-    const stats = trackStats.get(String(track.id));
-    return {
-      externalId: String(track.id),
-      title: track.title,
-      duration: track.duration,
-      averageRating: stats?.averageRating ?? null,
-    };
-  });
-
-  const albumAverage = albumStats.get(String(album.id))?.averageRating ?? null;
-
-  return {
-    ok: true,
-    data: {
+    externalId: String(artist.id),
+    name: artist.name,
+    picture_big: artist.picture_big,
+    ...artistRating,
+    topTracks: topRatedTracks,
+    albums: albums.map((album) => ({
       externalId: String(album.id),
       title: album.title,
       cover_big: album.cover_big,
-      cover_medium: album.cover_medium,
       release_date: album.release_date,
-      artist: { id: album.artist.id, name: album.artist.name },
-      averageRating: albumAverage,
-      duration: songs.reduce((acc, song) => acc + song.duration, 0),
-      songs,
-    },
+      averageRating: albumRatings.get(String(album.id))?.averageRating ?? null,
+    })),
   };
 }
 
-export async function getTrackDetail(
-  externalId: string,
-): Promise<TrackDetailResult> {
-  let track;
+export async function getAlbumDetail(externalId: string): Promise<AlbumDetail> {
+  const album = await deezerClient.getAlbum(externalId);
+  const deezerTracks = album.tracks?.data ?? [];
 
-  try {
-    track = await deezerClient.getTrack(externalId);
-  } catch {
-    return { ok: false, error: "DEEZER_ERROR" };
-  }
+  const [trackStats, albumStats] = await Promise.all([
+    fetchEntityStats({ type: "track", results: deezerTracks }),
+    fetchEntityStats({ type: "album", results: [{ id: album.id }] }),
+  ]);
 
-  let rating: EntityRating;
-
-  try {
-    rating = await findEntityRating("track", track.id);
-  } catch {
-    return { ok: false, error: "DB_ERROR" };
-  }
+  const songs = deezerTracks.map((track) => ({
+    externalId: String(track.id),
+    title: track.title,
+    duration: track.duration,
+    averageRating: trackStats.get(String(track.id))?.averageRating ?? null,
+  }));
 
   return {
-    ok: true,
-    data: {
-      externalId: String(track.id),
-      title: track.title,
-      duration: track.duration,
-      artist: { id: track.artist.id, name: track.artist.name },
-      album: {
-        id: track.album.id,
-        title: track.album.title,
-        cover_big: track.album.cover_big ?? track.album.cover_medium,
-      },
-      ...rating,
+    externalId: String(album.id),
+    title: album.title,
+    cover_big: album.cover_big,
+    cover_medium: album.cover_medium,
+    release_date: album.release_date,
+    artist: { id: album.artist.id, name: album.artist.name },
+    averageRating: albumStats.get(String(album.id))?.averageRating ?? null,
+    duration: songs.reduce((acc, song) => acc + song.duration, 0),
+    songs,
+  };
+}
+
+export async function getTrackDetail(externalId: string): Promise<TrackDetail> {
+  const track = await deezerClient.getTrack(externalId);
+  const rating = await findEntityRating("track", track.id);
+
+  return {
+    externalId: String(track.id),
+    title: track.title,
+    duration: track.duration,
+    artist: { id: track.artist.id, name: track.artist.name },
+    album: {
+      id: track.album.id,
+      title: track.album.title,
+      cover_big: track.album.cover_big ?? track.album.cover_medium,
     },
+    ...rating,
   };
 }
 
@@ -248,28 +151,15 @@ export async function search(input: {
   type: DeezerSearchType;
   limit: number;
   index: number;
-}): Promise<SearchResult> {
-  let raw: DeezerSearchResult;
-
-  try {
-    raw = await deezerClient.search(input);
-  } catch {
-    return { ok: false, error: "DEEZER_ERROR" };
-  }
+}): Promise<MusicalSearchResult> {
+  const raw = await deezerClient.search(input);
 
   if (raw.type === "artist") {
     raw.results.sort((a, b) => b.nb_fan - a.nb_fan);
   }
 
-  let stats: Map<string, EntityStats>;
-
-  try {
-    stats = await fetchEntityStats(raw);
-  } catch {
-    return { ok: false, error: "DB_ERROR" };
-  }
-
-  return { ok: true, results: project(raw, stats) };
+  const stats = await fetchEntityStats(raw);
+  return project(raw, stats);
 }
 
 type EntityStats = { averageRating: number | null; reviewsCount: number };

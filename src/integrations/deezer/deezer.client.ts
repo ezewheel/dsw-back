@@ -4,8 +4,11 @@ import type {
   DeezerArtistDTO,
   DeezerAlbumListItemDTO,
 } from "./dtos/deezer-responses.dto.js";
+import { HttpError } from "../../shared/errors.js";
 
 const DEEZER_BASE_URL = "https://api.deezer.com";
+// Deezer responde 200 con este código de error cuando el id no existe.
+const DEEZER_NO_DATA_CODE = 800;
 
 export type DeezerSearchType = "track" | "album" | "artist";
 
@@ -30,16 +33,15 @@ const SEARCH_ENDPOINTS: Record<DeezerSearchType, string> = {
 export class DeezerClient {
   private async get<T>(path: string): Promise<T> {
     const url = path.startsWith("http") ? path : `${DEEZER_BASE_URL}${path}`;
-    const response = await fetch(url);
+    const response = await fetch(url).catch(() => null);
+    const data = response?.ok ? await response.json() : null;
 
-    if (!response.ok) {
-      throw new Error(`Error al consultar Deezer: ${response.status}`);
+    if (data?.error?.code === DEEZER_NO_DATA_CODE) {
+      throw new HttpError(404, "No se encontró el contenido solicitado");
     }
 
-    const data = await response.json();
-
-    if (data.error) {
-      throw new Error(`Deezer devolvió un error: ${data.error.message}`);
+    if (!data || data.error) {
+      throw new HttpError(502, "Error al consultar a Deezer");
     }
 
     return data as T;
