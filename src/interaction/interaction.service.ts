@@ -2,7 +2,7 @@ import { orm } from "../shared/db/orm.js";
 import { MusicalEntity } from "../musical-entity/musical-entity.entity.js";
 import { Interaction } from "./interaction.entity.js";
 import { User } from "../user/user.entity.js";
-import { DeezerClient } from "../deezer/deezer.client.js";
+import * as deezer from "../deezer/deezer.client.js";
 import { fetchEntityDisplay } from "../deezer/entity-display.js";
 import { HttpError } from "../shared/errors.js";
 import type {
@@ -11,8 +11,6 @@ import type {
   LatestReview,
   ReviewedSong,
 } from "./interaction.types.js";
-
-const deezerClient = new DeezerClient();
 
 export async function getEntityReviews(input: {
   type: "track" | "album" | "artist";
@@ -150,7 +148,8 @@ async function refreshEntityStats(entity: MusicalEntity): Promise<void> {
   });
 
   const withContent = interactions.filter(
-    (interaction) => interaction.content !== null && interaction.content !== undefined,
+    (interaction) =>
+      interaction.content !== null && interaction.content !== undefined,
   );
 
   entity.ratingsCount = interactions.length;
@@ -188,7 +187,10 @@ export async function getLatestReviews(limit: number): Promise<LatestReview[]> {
     [...uniqueEntities.values()].map(async (entity) => {
       const key = `${entity.type}:${entity.deezerId}`;
       try {
-        entityInfo.set(key, await fetchEntityDisplay(entity.type, String(entity.deezerId)));
+        entityInfo.set(
+          key,
+          await fetchEntityDisplay(entity.type, String(entity.deezerId)),
+        );
       } catch {
         entityInfo.set(key, null);
       }
@@ -210,14 +212,13 @@ export async function getLatestReviews(limit: number): Promise<LatestReview[]> {
       content: interaction.content!,
       createdAt: interaction.createdAt.toISOString(),
       updatedAt: interaction.updatedAt.toISOString(),
-      entity:
-        info ?? {
-          externalId: String(entity.deezerId),
-          type: entity.type,
-          title: null,
-          cover: null,
-          artist: null,
-        },
+      entity: info ?? {
+        externalId: String(entity.deezerId),
+        type: entity.type,
+        title: null,
+        cover: null,
+        artist: null,
+      },
     };
   });
 }
@@ -248,7 +249,7 @@ export async function getLatestReviewedSongs(
     seen.add(id);
 
     try {
-      const track = await deezerClient.getTrack(id);
+      const track = await deezer.getTrack(id);
       songs.push({
         externalId: id,
         title: track.title,
@@ -262,9 +263,7 @@ export async function getLatestReviewedSongs(
         reviewsCount: entity.ratingsCount,
         reviewedAt: interaction.createdAt.toISOString(),
       });
-    } catch {
-      // Canción sin datos en Deezer: no entra al listado.
-    }
+    } catch {}
 
     if (songs.length === limit) break;
   }

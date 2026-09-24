@@ -3,110 +3,77 @@ import type {
   DeezerAlbumDTO,
   DeezerArtistDTO,
   DeezerAlbumListItemDTO,
+  DeezerSearchResult,
+  DeezerSearchType,
 } from "./deezer.types.js";
 import { HttpError } from "../shared/errors.js";
 
 const DEEZER_BASE_URL = "https://api.deezer.com";
-// Deezer responde 200 con este código de error cuando el id no existe.
 const DEEZER_NO_DATA_CODE = 800;
 
-export type DeezerSearchType = "track" | "album" | "artist";
+async function get<T>(path: string): Promise<T> {
+  const url = path.startsWith("http") ? path : `${DEEZER_BASE_URL}${path}`;
+  const response = await fetch(url).catch(() => null);
+  const data = response?.ok ? await response.json() : null;
 
-export interface DeezerSearchParams {
+  if (data?.error?.code === DEEZER_NO_DATA_CODE) {
+    throw new HttpError(404, "No se encontró el contenido solicitado");
+  }
+
+  if (!data || data.error) {
+    throw new HttpError(502, "Error al consultar a Deezer");
+  }
+
+  return data as T;
+}
+
+export async function search({
+  query,
+  type,
+  limit,
+  index,
+}: {
   query: string;
   type: DeezerSearchType;
   limit: number;
   index: number;
+}): Promise<DeezerSearchResult> {
+  const { data, total } = await get<{ data: unknown[]; total: number }>(
+    `/search/${type}?q=${encodeURIComponent(query)}&limit=${limit}&index=${index}`,
+  );
+
+  return { type, results: data, total, index } as DeezerSearchResult;
 }
 
-export type DeezerSearchResult =
-  | { type: "track"; results: DeezerTrackDTO[]; total: number; index: number }
-  | { type: "album"; results: DeezerAlbumDTO[]; total: number; index: number }
-  | { type: "artist"; results: DeezerArtistDTO[]; total: number; index: number };
+export function getArtist(id: number | string) {
+  return get<DeezerArtistDTO>(`/artist/${id}`);
+}
 
-const SEARCH_ENDPOINTS: Record<DeezerSearchType, string> = {
-  track: "track",
-  album: "album",
-  artist: "artist",
-};
+export function getAlbum(id: number | string) {
+  return get<DeezerAlbumDTO>(`/album/${id}`);
+}
 
-export class DeezerClient {
-  private async get<T>(path: string): Promise<T> {
-    const url = path.startsWith("http") ? path : `${DEEZER_BASE_URL}${path}`;
-    const response = await fetch(url).catch(() => null);
-    const data = response?.ok ? await response.json() : null;
+export function getTrack(id: number | string) {
+  return get<DeezerTrackDTO>(`/track/${id}`);
+}
 
-    if (data?.error?.code === DEEZER_NO_DATA_CODE) {
-      throw new HttpError(404, "No se encontró el contenido solicitado");
-    }
+export async function getArtistTopTracks(id: number | string, limit = 50) {
+  const { data } = await get<{ data: DeezerTrackDTO[] }>(
+    `/artist/${id}/top?limit=${limit}`,
+  );
+  return data;
+}
 
-    if (!data || data.error) {
-      throw new HttpError(502, "Error al consultar a Deezer");
-    }
+export async function getArtistAlbums(id: number | string) {
+  const albums: DeezerAlbumListItemDTO[] = [];
+  let next: string | null = `/artist/${id}/albums?limit=100`;
 
-    return data as T;
+  while (next) {
+    const page: { data: DeezerAlbumListItemDTO[]; next?: string } =
+      await get(next);
+    albums.push(...page.data);
+    next = page.next ?? null;
   }
 
-  async search({
-    query,
-    type,
-    limit,
-    index,
-  }: DeezerSearchParams): Promise<DeezerSearchResult> {
-    const data = await this.get<{ data: unknown[]; total: number }>(
-      `/search/${SEARCH_ENDPOINTS[type]}?q=${encodeURIComponent(query)}&limit=${limit}&index=${index}`,
-    );
-
-    const results = data.data;
-    const total = data.total as number;
-
-    switch (type) {
-      case "track":
-        return { type, results: results as DeezerTrackDTO[], total, index };
-      case "album":
-        return { type, results: results as DeezerAlbumDTO[], total, index };
-      case "artist":
-        return { type, results: results as DeezerArtistDTO[], total, index };
-    }
-  }
-
-  async getArtist(id: number | string): Promise<DeezerArtistDTO> {
-    return this.get<DeezerArtistDTO>(`/artist/${id}`);
-  }
-
-  async getAlbum(id: number | string): Promise<DeezerAlbumDTO> {
-    return this.get<DeezerAlbumDTO>(`/album/${id}`);
-  }
-
-  async getTrack(id: number | string): Promise<DeezerTrackDTO> {
-    return this.get<DeezerTrackDTO>(`/track/${id}`);
-  }
-
-  async getArtistTopTracks(
-    id: number | string,
-    limit = 50,
-  ): Promise<DeezerTrackDTO[]> {
-    const data = await this.get<{ data: DeezerTrackDTO[] }>(
-      `/artist/${id}/top?limit=${limit}`,
-    );
-    return data.data;
-  }
-
-  async getArtistAlbums(
-    id: number | string,
-  ): Promise<DeezerAlbumListItemDTO[]> {
-    const albums: DeezerAlbumListItemDTO[] = [];
-    let next: string | null = `/artist/${id}/albums?limit=100`;
-
-    while (next) {
-      const page: {
-        data: DeezerAlbumListItemDTO[];
-        next?: string | null;
-      } = await this.get(next);
-      albums.push(...page.data);
-      next = page.next ?? null;
-    }
-
-    return albums;
-  }
+  return albums;
 }

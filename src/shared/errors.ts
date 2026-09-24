@@ -19,9 +19,10 @@ export function errorHandler(
     return res.status(err.status).json({ message: err.message });
   }
 
-  // express.json() lanza un SyntaxError con `body` cuando el JSON está mal formado.
   if (err instanceof SyntaxError && "body" in err) {
-    return res.status(400).json({ message: "El cuerpo de la solicitud no es un JSON válido" });
+    return res
+      .status(400)
+      .json({ message: "El cuerpo de la solicitud no es un JSON válido" });
   }
 
   console.error(err);

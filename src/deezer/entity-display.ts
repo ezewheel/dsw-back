@@ -1,6 +1,4 @@
-import { DeezerClient } from "./deezer.client.js";
-
-const deezerClient = new DeezerClient();
+import * as deezer from "./deezer.client.js";
 
 export type EntityDisplay = {
   externalId: string;
@@ -15,7 +13,7 @@ export async function fetchEntityDisplay(
   externalId: string,
 ): Promise<EntityDisplay> {
   if (type === "artist") {
-    const artist = await deezerClient.getArtist(externalId);
+    const artist = await deezer.getArtist(externalId);
     return {
       externalId,
       type,
@@ -26,7 +24,7 @@ export async function fetchEntityDisplay(
   }
 
   if (type === "album") {
-    const album = await deezerClient.getAlbum(externalId);
+    const album = await deezer.getAlbum(externalId);
     return {
       externalId,
       type,
@@ -36,7 +34,7 @@ export async function fetchEntityDisplay(
     };
   }
 
-  const track = await deezerClient.getTrack(externalId);
+  const track = await deezer.getTrack(externalId);
   return {
     externalId,
     type,

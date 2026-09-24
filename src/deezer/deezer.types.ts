@@ -53,3 +53,10 @@ export interface DeezerAlbumListItemDTO {
   cover_big: string;
   release_date: string;
 }
+
+export type DeezerSearchType = "track" | "album" | "artist";
+
+export type DeezerSearchResult =
+  | { type: "track"; results: DeezerTrackDTO[]; total: number; index: number }
+  | { type: "album"; results: DeezerAlbumDTO[]; total: number; index: number }
+  | { type: "artist"; results: DeezerArtistDTO[]; total: number; index: number };

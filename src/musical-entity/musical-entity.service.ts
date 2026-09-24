@@ -1,10 +1,10 @@
 import { orm } from "../shared/db/orm.js";
 import { MusicalEntity } from "./musical-entity.entity.js";
-import {
-  DeezerClient,
-  type DeezerSearchResult,
-  type DeezerSearchType,
-} from "../deezer/deezer.client.js";
+import * as deezer from "../deezer/deezer.client.js";
+import type {
+  DeezerSearchResult,
+  DeezerSearchType,
+} from "../deezer/deezer.types.js";
 import { fetchEntityDisplay } from "../deezer/entity-display.js";
 import type {
   AlbumDetail,
@@ -13,8 +13,6 @@ import type {
   TopRated,
   TrackDetail,
 } from "./musical-entity.types.js";
-
-const deezerClient = new DeezerClient();
 
 export async function getTopRated(): Promise<TopRated> {
   const [artists, albums, tracks] = await Promise.all(
@@ -44,9 +42,7 @@ export async function getTopRated(): Promise<TopRated> {
             averageRating: entity.averageRating,
             reviewsCount: entity.ratingsCount,
           });
-        } catch {
-          // Entidad sin datos en Deezer: no entra en el listado.
-        }
+        } catch {}
       }
       return items;
     }),
@@ -59,9 +55,9 @@ export async function getArtistDetail(
   externalId: string,
 ): Promise<ArtistDetail> {
   const [artist, topTracks, albums] = await Promise.all([
-    deezerClient.getArtist(externalId),
-    deezerClient.getArtistTopTracks(externalId),
-    deezerClient.getArtistAlbums(externalId),
+    deezer.getArtist(externalId),
+    deezer.getArtistTopTracks(externalId),
+    deezer.getArtistAlbums(externalId),
   ]);
 
   const [ratings, albumRatings, artistRating] = await Promise.all([
@@ -102,7 +98,7 @@ export async function getArtistDetail(
 }
 
 export async function getAlbumDetail(externalId: string): Promise<AlbumDetail> {
-  const album = await deezerClient.getAlbum(externalId);
+  const album = await deezer.getAlbum(externalId);
   const deezerTracks = album.tracks?.data ?? [];
 
   const [trackStats, albumStats] = await Promise.all([
@@ -131,7 +127,7 @@ export async function getAlbumDetail(externalId: string): Promise<AlbumDetail> {
 }
 
 export async function getTrackDetail(externalId: string): Promise<TrackDetail> {
-  const track = await deezerClient.getTrack(externalId);
+  const track = await deezer.getTrack(externalId);
   const rating = await findEntityRating("track", track.id);
 
   return {
@@ -154,7 +150,7 @@ export async function search(input: {
   limit: number;
   index: number;
 }): Promise<MusicalSearchResult> {
-  const raw = await deezerClient.search(input);
+  const raw = await deezer.search(input);
 
   if (raw.type === "artist") {
     raw.results.sort((a, b) => b.nb_fan - a.nb_fan);
