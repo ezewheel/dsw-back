@@ -13,54 +13,24 @@ import type { CreateReviewDTO } from "./dtos/create-review.dto.js";
 export async function getEntityReviews(req: Request, res: Response) {
   const { type, id } = req.params as unknown as EntityReviewsParamsDTO;
   const { page, pageSize } = req.query as unknown as EntityReviewsQueryDTO;
-  const result = await getEntityReviewsService({ type, id, page, pageSize });
-
-  if (!result.ok) {
-    return res.status(500).json({ message: "Error al consultar la base de datos" });
-  }
-
-  return res.status(200).json(result.data);
+  res.json(await getEntityReviewsService({ type, id, page, pageSize }));
 }
 
 export async function getLatestReviews(req: Request, res: Response) {
   const { limit } = req.query as unknown as LatestReviewsQueryDTO;
-  const result = await getLatestReviewsService(limit);
-
-  if (!result.ok) {
-    return res.status(500).json({ message: "Error al consultar la base de datos" });
-  }
-
-  return res.status(200).json(result.data);
+  res.json(await getLatestReviewsService(limit));
 }
 
 export async function saveReview(req: Request, res: Response) {
   const { type, id } = req.params as unknown as EntityReviewsParamsDTO;
-  const { value, content } = req.body as unknown as CreateReviewDTO;
-  const userId = req.user?.sub;
+  const { value, content } = req.body as CreateReviewDTO;
+  const userId = req.user!.sub;
 
-  if (!userId) {
-    return res.status(401).json({ message: "Token no proporcionado" });
-  }
-
-  const result = await saveReviewService({ type, id, userId, value, content });
-
-  if (!result.ok) {
-    if (result.error === "USER_NOT_FOUND") {
-      return res.status(404).json({ message: "Usuario no encontrado" });
-    }
-    return res.status(500).json({ message: "Error al guardar la reseña" });
-  }
-
-  return res.status(result.created ? 201 : 200).json(result.data);
+  const { review, created } = await saveReviewService({ type, id, userId, value, content });
+  res.status(created ? 201 : 200).json(review);
 }
 
 export async function getLatestReviewedSongs(req: Request, res: Response) {
   const { limit } = req.query as unknown as LatestReviewsQueryDTO;
-  const result = await getLatestReviewedSongsService(limit);
-
-  if (!result.ok) {
-    return res.status(500).json({ message: "Error al consultar la base de datos" });
-  }
-
-  return res.status(200).json(result.data);
+  res.json(await getLatestReviewedSongsService(limit));
 }
