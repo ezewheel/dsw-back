@@ -1,39 +1,11 @@
-import {
-  registerDecorator,
-  type ValidationOptions,
-} from "class-validator";
-import {
-  IsNumber,
-  IsOptional,
-  IsString,
-  Max,
-  MaxLength,
-  Min,
-} from "class-validator";
+import { IsIn, IsOptional, IsString, MaxLength } from "class-validator";
 
-function IsHalfStep(validationOptions?: ValidationOptions) {
-  return function (object: object, propertyName: string) {
-    registerDecorator({
-      name: "isHalfStep",
-      target: object.constructor,
-      propertyName,
-      options: validationOptions,
-      validator: {
-        validate(value: unknown) {
-          return typeof value === "number" && Number.isInteger(value * 2);
-        },
-        defaultMessage: () =>
-          "La puntuación debe subir de a media estrella",
-      },
-    });
-  };
-}
+const RATING_VALUES = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
 
 export class CreateReviewDTO {
-  @IsNumber({ maxDecimalPlaces: 1 }, { message: "La puntuación debe ser un número" })
-  @IsHalfStep({ message: "La puntuación debe subir de a media estrella" })
-  @Min(0.5, { message: "La puntuación mínima es 0.5" })
-  @Max(5, { message: "La puntuación máxima es 5" })
+  @IsIn(RATING_VALUES, {
+    message: "La puntuación debe ir de 0.5 a 5, de a media estrella",
+  })
   value!: number;
 
   @IsOptional()

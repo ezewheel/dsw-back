@@ -1,8 +1,6 @@
 import { Router } from "express";
 import { SearchRequestDTO } from "./dtos/search-request.dto.js";
-import { ArtistParamsDTO } from "./dtos/artist-params.dto.js";
-import { AlbumParamsDTO } from "./dtos/album-params.dto.js";
-import { TrackParamsDTO } from "./dtos/track-params.dto.js";
+import { DeezerIdParamsDTO } from "./dtos/deezer-id-params.dto.js";
 import {
   search,
   getArtistDetail,
@@ -18,17 +16,17 @@ router.get("/top-rated", getTopRated);
 router.get("/search", validateDTO(SearchRequestDTO, "query"), search);
 router.get(
   "/artist/:id",
-  validateDTO(ArtistParamsDTO, "params"),
+  validateDTO(DeezerIdParamsDTO, "params"),
   getArtistDetail,
 );
 router.get(
   "/album/:id",
-  validateDTO(AlbumParamsDTO, "params"),
+  validateDTO(DeezerIdParamsDTO, "params"),
   getAlbumDetail,
 );
 router.get(
   "/track/:id",
-  validateDTO(TrackParamsDTO, "params"),
+  validateDTO(DeezerIdParamsDTO, "params"),
   getTrackDetail,
 );
 
