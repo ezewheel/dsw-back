@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { orm } from "./shared/db/orm.js";
 import { config } from "./shared/config.js";
+import { errorHandler } from "./shared/errors.js";
 import { RequestContext } from "@mikro-orm/core";
 import authRouter from "./auth/auth.router.js";
 import musicalEntityRouter from "./musical-entity/musical-entity.routes.js";
@@ -20,5 +21,7 @@ app.use((req, res, next) => {
 app.use("/auth", authRouter);
 app.use("/musical-entity", musicalEntityRouter);
 app.use("/interaction", interactionRouter);
+
+app.use(errorHandler);
 
 export default app;

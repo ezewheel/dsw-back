@@ -3,6 +3,7 @@ import { User } from "../user/user.entity.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { config } from "../shared/config.js";
+import { HttpError } from "../shared/errors.js";
 
 const JWT_EXPIRES_IN = "7d";
 
@@ -18,42 +19,33 @@ export interface AuthTokenPayload {
   exp: number;
 }
 
-interface AuthSuccess {
-  ok: true;
+export interface AuthResponse {
   token: string;
   user: AuthUser;
 }
 
-export type LoginResult =
-  | AuthSuccess
-  | { ok: false; error: "INVALID_CREDENTIALS" };
-
-export type RegisterResult =
-  | AuthSuccess
-  | { ok: false; error: "EMAIL_TAKEN" };
-
 export async function login(input: {
   email: string;
   password: string;
-}): Promise<LoginResult> {
+}): Promise<AuthResponse> {
   const user = await orm.em.findOne(User, { email: input.email });
 
   if (!user || !(await bcrypt.compare(input.password, user.password))) {
-    return { ok: false, error: "INVALID_CREDENTIALS" };
+    throw new HttpError(401, "Email o contraseña incorrectos");
   }
 
-  return { ok: true, token: createAuthToken(user), user: toAuthUser(user) };
+  return { token: createAuthToken(user), user: toAuthUser(user) };
 }
 
 export async function register(input: {
   email: string;
   password: string;
   nickname: string;
-}): Promise<RegisterResult> {
+}): Promise<AuthResponse> {
   const existing = await orm.em.findOne(User, { email: input.email });
 
   if (existing) {
-    return { ok: false, error: "EMAIL_TAKEN" };
+    throw new HttpError(409, "El email ya está registrado");
   }
 
   const user = new User();
@@ -63,7 +55,7 @@ export async function register(input: {
 
   await orm.em.persist(user).flush();
 
-  return { ok: true, token: createAuthToken(user), user: toAuthUser(user) };
+  return { token: createAuthToken(user), user: toAuthUser(user) };
 }
 
 function toAuthUser(user: User): AuthUser {
@@ -78,7 +70,12 @@ export function verifyAuthToken(token: string): AuthTokenPayload {
   return jwt.verify(token, config.jwtSecret) as unknown as AuthTokenPayload;
 }
 
-export async function getMe(userId: number): Promise<AuthUser | null> {
+export async function getMe(userId: number): Promise<AuthUser> {
   const user = await orm.em.findOne(User, { id: userId });
-  return user ? toAuthUser(user) : null;
+
+  if (!user) {
+    throw new HttpError(404, "Usuario no encontrado");
+  }
+
+  return toAuthUser(user);
 }
