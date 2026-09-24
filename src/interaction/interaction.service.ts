@@ -17,7 +17,7 @@ export type EntityReviewsServiceResult =
   | { ok: true; data: EntityReviewsPaginated }
   | { ok: false; error: "DB_ERROR" };
 
-export type CreateReviewResult =
+export type SaveReviewResult =
   | { ok: true; data: EntityReview; created: boolean }
   | { ok: false; error: "USER_NOT_FOUND" | "DB_ERROR" };
 
@@ -92,13 +92,13 @@ export async function getEntityReviews(input: {
   }
 }
 
-export async function createReview(input: {
+export async function saveReview(input: {
   type: "track" | "album" | "artist";
   id: string;
   userId: number;
   value: number;
   content?: string;
-}): Promise<CreateReviewResult> {
+}): Promise<SaveReviewResult> {
   const em = orm.em;
 
   try {
@@ -123,7 +123,7 @@ export async function createReview(input: {
       return { ok: false, error: "USER_NOT_FOUND" };
     }
 
-    const content = input.content?.trim() || undefined;
+    const content = input.content?.trim() || null;
 
     let interaction = await em.findOne(Interaction, {
       user,
@@ -135,9 +135,7 @@ export async function createReview(input: {
     if (interaction) {
       interaction.deletedAt = null as unknown as Date | undefined;
       interaction.value = input.value;
-      if (content !== undefined) {
-        interaction.content = content;
-      }
+      interaction.content = content;
       interaction.updatedAt = new Date();
       em.persist(interaction);
     } else {

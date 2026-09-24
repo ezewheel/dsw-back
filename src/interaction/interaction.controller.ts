@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import {
   getEntityReviews as getEntityReviewsService,
-  createReview as createReviewService,
+  saveReview as saveReviewService,
   getLatestReviews as getLatestReviewsService,
   getLatestReviewedSongs as getLatestReviewedSongsService,
 } from "./interaction.service.js";
@@ -33,7 +33,7 @@ export async function getLatestReviews(req: Request, res: Response) {
   return res.status(200).json(result.data);
 }
 
-export async function createReview(req: Request, res: Response) {
+export async function saveReview(req: Request, res: Response) {
   const { type, id } = req.params as unknown as EntityReviewsParamsDTO;
   const { value, content } = req.body as unknown as CreateReviewDTO;
   const userId = req.user?.sub;
@@ -42,7 +42,7 @@ export async function createReview(req: Request, res: Response) {
     return res.status(401).json({ message: "Token no proporcionado" });
   }
 
-  const result = await createReviewService({ type, id, userId, value, content });
+  const result = await saveReviewService({ type, id, userId, value, content });
 
   if (!result.ok) {
     if (result.error === "USER_NOT_FOUND") {

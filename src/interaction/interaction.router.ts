@@ -5,7 +5,7 @@ import { LatestReviewsQueryDTO } from "./dtos/latest-reviews-query.dto.js";
 import { CreateReviewDTO } from "./dtos/create-review.dto.js";
 import {
   getEntityReviews,
-  createReview,
+  saveReview,
   getLatestReviews,
   getLatestReviewedSongs,
 } from "./interaction.controller.js";
@@ -35,7 +35,7 @@ router.post(
   requireAuth,
   validateDTO(EntityReviewsParamsDTO, "params"),
   validateDTO(CreateReviewDTO, "body"),
-  createReview,
+  saveReview,
 );
 
 export default router;

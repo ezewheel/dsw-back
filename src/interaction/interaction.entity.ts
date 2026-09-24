@@ -26,7 +26,7 @@ export class Interaction {
   value!: number;
 
   @Property({ nullable: true, type: "text" })
-  content?: string;
+  content?: string | null;
 
   @Property({ nullable: false })
   createdAt: Date = new Date();
