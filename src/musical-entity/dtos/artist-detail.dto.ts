@@ -2,6 +2,7 @@ export type ArtistTopTrack = {
   externalId: string;
   title: string;
   album: {
+    id: number;
     title: string;
     cover_medium: string;
   };
@@ -20,6 +21,8 @@ export type ArtistDetail = {
   externalId: string;
   name: string;
   picture_big: string;
+  averageRating: number | null;
+  ratingsCount: number;
   topTracks: ArtistTopTrack[];
   albums: ArtistAlbum[];
 };

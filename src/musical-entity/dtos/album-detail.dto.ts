@@ -12,7 +12,7 @@ export type AlbumDetail = {
   cover_medium: string;
   release_date: string;
   artist: {
-    id?: number;
+    id: number;
     name: string;
   };
   averageRating: number | null;

@@ -31,7 +31,8 @@ export type AlbumDetailResult =
 
 export type TrackDetailResult =
   | { ok: true; data: TrackDetail }
-  | { ok: false; error: "DEEZER_ERROR" };
+  | { ok: false; error: "DEEZER_ERROR" }
+  | { ok: false; error: "DB_ERROR" };
 
 export type TopRatedResult =
   | { ok: true; data: TopRated }
@@ -106,11 +107,13 @@ export async function getArtistDetail(
 
   let ratings: Map<string, EntityStats>;
   let albumRatings: Map<string, EntityStats>;
+  let artistRating: EntityRating;
 
   try {
-    [ratings, albumRatings] = await Promise.all([
+    [ratings, albumRatings, artistRating] = await Promise.all([
       fetchEntityStats({ type: "track", results: topTracks }),
       fetchEntityStats({ type: "album", results: albums }),
+      findEntityRating("artist", artist.id),
     ]);
   } catch {
     return { ok: false, error: "DB_ERROR" };
@@ -121,6 +124,7 @@ export async function getArtistDetail(
       externalId: String(track.id),
       title: track.title,
       album: {
+        id: track.album.id,
         title: track.album.title,
         cover_medium: track.album.cover_medium,
       },
@@ -136,6 +140,7 @@ export async function getArtistDetail(
       externalId: String(artist.id),
       name: artist.name,
       picture_big: artist.picture_big,
+      ...artistRating,
       topTracks: topRatedTracks,
       albums: albums.map((album) => ({
         externalId: String(album.id),
@@ -194,7 +199,7 @@ export async function getAlbumDetail(
       cover_big: album.cover_big,
       cover_medium: album.cover_medium,
       release_date: album.release_date,
-      artist: { id: album.artist?.id, name: album.artist?.name ?? "" },
+      artist: { id: album.artist.id, name: album.artist.name },
       averageRating: albumAverage,
       duration: songs.reduce((acc, song) => acc + song.duration, 0),
       songs,
@@ -213,17 +218,27 @@ export async function getTrackDetail(
     return { ok: false, error: "DEEZER_ERROR" };
   }
 
+  let rating: EntityRating;
+
+  try {
+    rating = await findEntityRating("track", track.id);
+  } catch {
+    return { ok: false, error: "DB_ERROR" };
+  }
+
   return {
     ok: true,
     data: {
       externalId: String(track.id),
       title: track.title,
       duration: track.duration,
-      artist: { name: track.artist?.name ?? "" },
+      artist: { id: track.artist.id, name: track.artist.name },
       album: {
-        title: track.album?.title ?? "",
-        cover_big: track.album?.cover_big ?? track.album?.cover_medium ?? "",
+        id: track.album.id,
+        title: track.album.title,
+        cover_big: track.album.cover_big ?? track.album.cover_medium,
       },
+      ...rating,
     },
   };
 }
@@ -258,6 +273,19 @@ export async function search(input: {
 }
 
 type EntityStats = { averageRating: number | null; reviewsCount: number };
+
+type EntityRating = { averageRating: number | null; ratingsCount: number };
+
+async function findEntityRating(
+  type: DeezerSearchType,
+  deezerId: number,
+): Promise<EntityRating> {
+  const entity = await orm.em.findOne(MusicalEntity, { type, deezerId });
+  return {
+    averageRating: entity?.averageRating || null,
+    ratingsCount: entity?.ratingsCount ?? 0,
+  };
+}
 
 async function fetchEntityStats(raw: {
   type: DeezerSearchType;

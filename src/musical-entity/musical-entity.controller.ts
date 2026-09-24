@@ -65,9 +65,12 @@ export async function getTrackDetail(req: Request, res: Response) {
   const result = await getTrackDetailService(id);
 
   if (!result.ok) {
-    return res
-      .status(502)
-      .json({ message: "Error al consultar a Deezer" });
+    const status = result.error === "DEEZER_ERROR" ? 502 : 500;
+    const message =
+      result.error === "DEEZER_ERROR"
+        ? "Error al consultar a Deezer"
+        : "Error al consultar la base de datos";
+    return res.status(status).json({ message });
   }
 
   return res.status(200).json(result.data);
