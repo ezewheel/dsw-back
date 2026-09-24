@@ -1,8 +1,6 @@
-import "dotenv/config";
 import app from "./app.js";
+import { config } from "./shared/config.js";
 
-const PORT = 3000;
-
-app.listen(PORT, () => {
-  console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
+app.listen(config.port, () => {
+  console.log(`Servidor ejecutándose en http://localhost:${config.port}`);
 });

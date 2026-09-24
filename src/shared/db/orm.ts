@@ -2,17 +2,15 @@ import { MikroORM } from "@mikro-orm/core";
 import { MySqlDriver } from "@mikro-orm/mysql";
 import { SqlHighlighter } from "@mikro-orm/sql-highlighter";
 import { ReflectMetadataProvider } from "@mikro-orm/decorators/legacy";
+import { config } from "../config.js";
 
 export const orm = await MikroORM.init({
   driver: MySqlDriver,
   entities: ["./dist/**/*.entity.js"],
   entitiesTs: ["./src/**/*.entity.ts"],
-  dbName: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  clientUrl: process.env.DB_URL,
+  clientUrl: config.dbUrl,
   highlighter: new SqlHighlighter(),
-  debug: process.env.NODE_ENV !== "production",
+  debug: !config.isProduction,
   metadataProvider: ReflectMetadataProvider,
   schemaGenerator: {
     disableForeignKeys: true,

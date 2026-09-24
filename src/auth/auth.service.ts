@@ -2,14 +2,7 @@ import { orm } from "../shared/db/orm.js";
 import { User } from "../user/user.entity.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
-const jwtSecretEnv = process.env.JWT_SECRET;
-
-if (!jwtSecretEnv) {
-  throw new Error("JWT_SECRET no está definido en las variables de entorno");
-}
-
-const jwtSecret: string = jwtSecretEnv;
+import { config } from "../shared/config.js";
 
 const JWT_EXPIRES_IN = "7d";
 
@@ -78,11 +71,11 @@ function toAuthUser(user: User): AuthUser {
 }
 
 function createAuthToken(user: User): string {
-  return jwt.sign({ sub: user.id! }, jwtSecret, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign({ sub: user.id! }, config.jwtSecret, { expiresIn: JWT_EXPIRES_IN });
 }
 
 export function verifyAuthToken(token: string): AuthTokenPayload {
-  return jwt.verify(token, jwtSecret) as unknown as AuthTokenPayload;
+  return jwt.verify(token, config.jwtSecret) as unknown as AuthTokenPayload;
 }
 
 export async function getMe(userId: number): Promise<AuthUser | null> {
