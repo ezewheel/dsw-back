@@ -6,7 +6,11 @@ import {
 import { Interaction } from "./interaction.entity.js";
 import { User } from "../user/user.entity.js";
 import * as deezer from "../deezer/deezer.client.js";
-import { fetchEntityDisplay, type EntityDisplay } from "../deezer/entity-display.js";
+import {
+  toEntitySummary,
+  toUnavailableEntitySummary,
+} from "../musical-entity/musical-entity.service.js";
+import type { EntitySummary } from "../musical-entity/musical-entity.types.js";
 import { HttpError } from "../shared/errors.js";
 import type {
   EntityReview,
@@ -166,40 +170,32 @@ export async function getLatestReviews(limit: number): Promise<LatestReview[]> {
     },
   );
 
-  const displays = new Map<string, Promise<EntityDisplay | null>>();
+  const summaries = new Map<number, Promise<EntitySummary>>();
+  const summarize = (entity: MusicalEntity) => {
+    const cached = summaries.get(entity.id);
+    if (cached) return cached;
+
+    const summary = deezer.getEntity(entity.type, entity.deezerId).then(
+      (item) => toEntitySummary(item, entity),
+      () => toUnavailableEntitySummary(entity),
+    );
+    summaries.set(entity.id, summary);
+    return summary;
+  };
 
   return Promise.all(
-    interactions.map(async (interaction) => {
-      const entity = interaction.musicalEntity;
-      const externalId = String(entity.deezerId);
-      const key = `${entity.type}:${externalId}`;
-
-      if (!displays.has(key)) {
-        displays.set(
-          key,
-          fetchEntityDisplay(entity.type, externalId).catch(() => null),
-        );
-      }
-
-      return {
-        id: interaction.id,
-        user: {
-          id: interaction.user.id,
-          nickname: interaction.user.nickname,
-        },
-        value: interaction.value,
-        content: interaction.content!,
-        createdAt: interaction.createdAt.toISOString(),
-        updatedAt: interaction.updatedAt.toISOString(),
-        entity: (await displays.get(key)) ?? {
-          externalId,
-          type: entity.type,
-          title: null,
-          cover: null,
-          artist: null,
-        },
-      };
-    }),
+    interactions.map(async (interaction) => ({
+      id: interaction.id,
+      user: {
+        id: interaction.user.id,
+        nickname: interaction.user.nickname,
+      },
+      value: interaction.value,
+      content: interaction.content!,
+      createdAt: interaction.createdAt.toISOString(),
+      updatedAt: interaction.updatedAt.toISOString(),
+      entity: await summarize(interaction.musicalEntity),
+    })),
   );
 }
 
@@ -236,7 +232,7 @@ export async function getLatestReviewedSongs(
         duration: track.duration ?? null,
         cover: track.album?.cover_medium ?? null,
         averageRating: entity.averageRating || null,
-        reviewsCount: entity.ratingsCount,
+        ratingsCount: entity.ratingsCount,
         reviewedAt: interaction.createdAt.toISOString(),
       };
     }),

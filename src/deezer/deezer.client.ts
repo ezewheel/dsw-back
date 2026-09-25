@@ -3,7 +3,7 @@ import type {
   DeezerAlbumDTO,
   DeezerArtistDTO,
   DeezerAlbumListItemDTO,
-  DeezerSearchResult,
+  DeezerEntity,
 } from "./deezer.types.js";
 import type { MusicalEntityType } from "../musical-entity/musical-entity.entity.js";
 import { HttpError } from "../shared/errors.js";
@@ -27,7 +27,7 @@ async function get<T>(path: string): Promise<T> {
   return data as T;
 }
 
-export async function search({
+export function search({
   query,
   type,
   limit,
@@ -37,12 +37,14 @@ export async function search({
   type: MusicalEntityType;
   limit: number;
   index: number;
-}): Promise<DeezerSearchResult> {
-  const { data, total } = await get<{ data: unknown[]; total: number }>(
+}) {
+  return get<{ data: DeezerEntity[]; total: number }>(
     `/search/${type}?q=${encodeURIComponent(query)}&limit=${limit}&index=${index}`,
   );
+}
 
-  return { type, results: data, total, index } as DeezerSearchResult;
+export function getEntity(type: MusicalEntityType, id: number | string) {
+  return get<DeezerEntity>(`/${type}/${id}`);
 }
 
 export function getArtist(id: number | string) {

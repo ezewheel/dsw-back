@@ -1,64 +1,24 @@
 import type { MusicalEntityType } from "./musical-entity.entity.js";
 
-export type TrackSearchResult = {
-  externalId: string;
-  type: "track";
-  title: string;
-  artist: {
-    id: number;
-    name: string;
-  };
-  album: {
-    id: number;
-    title: string;
-    cover_medium: string;
-  };
-  averageRating: number | null;
-  reviewsCount: number;
-};
-
-export type AlbumSearchResult = {
-  externalId: string;
-  type: "album";
-  title: string;
-  cover_medium: string;
-  artist: {
-    id: number;
-    name: string;
-  };
-  averageRating: number | null;
-  reviewsCount: number;
-};
-
-export type ArtistSearchResult = {
-  externalId: string;
-  type: "artist";
-  name: string;
-  picture_medium: string;
-  averageRating: number | null;
-  reviewsCount: number;
-};
-
-export type MusicalSearchResult = {
-  results: (TrackSearchResult | AlbumSearchResult | ArtistSearchResult)[];
-  total: number;
-  hasMore: boolean;
-};
-
-export type TopRatedItem = {
+export type EntitySummary = {
   externalId: string;
   type: MusicalEntityType;
   title: string | null;
   cover: string | null;
   artist: string | null;
-  averageRating: number;
-  reviewsCount: number;
+  averageRating: number | null;
+  ratingsCount: number;
+};
+
+export type MusicalSearchResult = {
+  results: EntitySummary[];
+  total: number;
 };
 
 export type TopRated = {
-  artists: TopRatedItem[];
-  albums: TopRatedItem[];
-  tracks: TopRatedItem[];
+  artists: EntitySummary[];
+  albums: EntitySummary[];
+  tracks: EntitySummary[];
 };
 
 export type ArtistTopTrack = {

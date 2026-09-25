@@ -1,4 +1,4 @@
-import type { EntityDisplay } from "../deezer/entity-display.js";
+import type { EntitySummary } from "../musical-entity/musical-entity.types.js";
 
 export type EntityReview = {
   id: number;
@@ -28,7 +28,7 @@ export type LatestReview = {
   content: string;
   createdAt: string;
   updatedAt: string;
-  entity: EntityDisplay;
+  entity: EntitySummary;
 };
 
 export type ReviewedSong = {
@@ -41,6 +41,6 @@ export type ReviewedSong = {
   duration: number | null;
   cover: string | null;
   averageRating: number | null;
-  reviewsCount: number;
+  ratingsCount: number;
   reviewedAt: string;
 };

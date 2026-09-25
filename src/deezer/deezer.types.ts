@@ -1,5 +1,6 @@
 export interface DeezerAlbumDTO {
   id: number;
+  type: "album";
   title: string;
   cover_big: string;
   cover_medium: string;
@@ -25,6 +26,7 @@ export interface DeezerAlbumTrackDTO {
 
 export interface DeezerTrackDTO {
   id: number;
+  type: "track";
   title: string;
   duration: number;
   artist: {
@@ -41,6 +43,7 @@ export interface DeezerTrackDTO {
 
 export interface DeezerArtistDTO {
   id: number;
+  type: "artist";
   name: string;
   picture_medium: string;
   picture_big: string;
@@ -54,7 +57,4 @@ export interface DeezerAlbumListItemDTO {
   release_date: string;
 }
 
-export type DeezerSearchResult =
-  | { type: "track"; results: DeezerTrackDTO[]; total: number; index: number }
-  | { type: "album"; results: DeezerAlbumDTO[]; total: number; index: number }
-  | { type: "artist"; results: DeezerArtistDTO[]; total: number; index: number };
+export type DeezerEntity = DeezerTrackDTO | DeezerAlbumDTO | DeezerArtistDTO;
