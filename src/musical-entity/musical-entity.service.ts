@@ -66,7 +66,7 @@ export async function getArtistDetail(
       album: {
         id: track.album.id,
         title: track.album.title,
-        cover_medium: track.album.cover_medium,
+        cover: track.album.cover_medium,
       },
       averageRating: toRating(trackEntities.get(track.id)).averageRating,
     }))
@@ -77,14 +77,14 @@ export async function getArtistDetail(
   return {
     externalId: String(artist.id),
     name: artist.name,
-    picture_big: artist.picture_big,
+    cover: artist.picture_big,
     ...artistRating,
     topTracks: topRatedTracks,
     albums: albums.map((album) => ({
       externalId: String(album.id),
       title: album.title,
-      cover_big: album.cover_big,
-      release_date: album.release_date,
+      cover: album.cover_big,
+      releaseDate: album.release_date,
       averageRating: toRating(albumEntities.get(album.id)).averageRating,
     })),
   };
@@ -99,7 +99,7 @@ export async function getAlbumDetail(externalId: string): Promise<AlbumDetail> {
     findEntityRating("album", album.id),
   ]);
 
-  const songs = deezerTracks.map((track) => ({
+  const tracks = deezerTracks.map((track) => ({
     externalId: String(track.id),
     title: track.title,
     duration: track.duration,
@@ -109,13 +109,12 @@ export async function getAlbumDetail(externalId: string): Promise<AlbumDetail> {
   return {
     externalId: String(album.id),
     title: album.title,
-    cover_big: album.cover_big,
-    cover_medium: album.cover_medium,
-    release_date: album.release_date,
+    cover: album.cover_big,
+    releaseDate: album.release_date,
     artist: { id: album.artist.id, name: album.artist.name },
     averageRating,
-    duration: songs.reduce((acc, song) => acc + song.duration, 0),
-    songs,
+    duration: tracks.reduce((acc, track) => acc + track.duration, 0),
+    tracks,
   };
 }
 
@@ -131,7 +130,7 @@ export async function getTrackDetail(externalId: string): Promise<TrackDetail> {
     album: {
       id: track.album.id,
       title: track.album.title,
-      cover_big: track.album.cover_big ?? track.album.cover_medium,
+      cover: track.album.cover_big ?? track.album.cover_medium,
     },
     ...rating,
   };
