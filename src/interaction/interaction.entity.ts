@@ -1,3 +1,4 @@
+import { OptionalProps } from "@mikro-orm/core";
 import {
   Entity,
   PrimaryKey,
@@ -13,6 +14,8 @@ import { MusicalEntity } from "../musical-entity/musical-entity.entity.js";
   properties: ["user", "musicalEntity"],
 })
 export class Interaction {
+  [OptionalProps]?: "createdAt" | "updatedAt";
+
   @PrimaryKey()
   id!: number;
 
@@ -31,9 +34,6 @@ export class Interaction {
   @Property({ nullable: false })
   createdAt: Date = new Date();
 
-  @Property({ nullable: false })
+  @Property({ nullable: false, onUpdate: () => new Date() })
   updatedAt: Date = new Date();
-
-  @Property({ nullable: true })
-  deletedAt?: Date;
 }

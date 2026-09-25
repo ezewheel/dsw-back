@@ -36,7 +36,7 @@ export async function getEntityReviews(input: {
 
   const [interactions, total] = await orm.em.findAndCount(
     Interaction,
-    { musicalEntity: entity, deletedAt: null, content: { $ne: null } },
+    { musicalEntity: entity, content: { $ne: null } },
     {
       populate: ["user"],
       orderBy: { createdAt: "DESC" },
@@ -99,19 +99,14 @@ export async function saveReview(input: {
   let created = false;
 
   if (interaction) {
-    interaction.deletedAt = null as unknown as Date | undefined;
     interaction.value = input.value;
     interaction.content = content;
-    interaction.updatedAt = new Date();
-    em.persist(interaction);
   } else {
     interaction = em.create(Interaction, {
       user,
       musicalEntity: entity,
       value: input.value,
       content,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     });
     created = true;
   }
@@ -138,16 +133,9 @@ export async function saveReview(input: {
 async function refreshEntityStats(entity: MusicalEntity): Promise<void> {
   const interactions = await orm.em.find(Interaction, {
     musicalEntity: entity,
-    deletedAt: null,
   });
 
-  const withContent = interactions.filter(
-    (interaction) =>
-      interaction.content !== null && interaction.content !== undefined,
-  );
-
   entity.ratingsCount = interactions.length;
-  entity.reviewsCount = withContent.length;
   entity.averageRating =
     interactions.length === 0
       ? 0
@@ -162,7 +150,7 @@ async function refreshEntityStats(entity: MusicalEntity): Promise<void> {
 export async function getLatestReviews(limit: number): Promise<LatestReview[]> {
   const interactions = await orm.em.find(
     Interaction,
-    { deletedAt: null, content: { $ne: null } },
+    { content: { $ne: null } },
     {
       populate: ["user", "musicalEntity"],
       orderBy: { createdAt: "DESC" },
@@ -204,7 +192,7 @@ export async function getLatestReviewedSongs(
 ): Promise<ReviewedSong[]> {
   const interactions = await orm.em.find(
     Interaction,
-    { deletedAt: null, musicalEntity: { type: "track" } },
+    { musicalEntity: { type: "track" } },
     {
       populate: ["musicalEntity"],
       orderBy: { createdAt: "DESC" },

@@ -8,7 +8,7 @@ export type MusicalEntityType = (typeof MUSICAL_ENTITY_TYPES)[number];
 @Entity()
 @Unique({ properties: ["type", "deezerId"] })
 export class MusicalEntity {
-  [OptionalProps]?: "reviewsCount" | "ratingsCount" | "averageRating";
+  [OptionalProps]?: "ratingsCount" | "averageRating";
 
   @PrimaryKey()
   id!: number;
@@ -18,9 +18,6 @@ export class MusicalEntity {
 
   @Property({ nullable: false })
   type!: MusicalEntityType;
-
-  @Property({ nullable: false, type: "integer" })
-  reviewsCount: number = 0;
 
   @Property({ nullable: false, type: "integer" })
   ratingsCount: number = 0;
