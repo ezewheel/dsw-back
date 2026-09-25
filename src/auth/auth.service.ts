@@ -59,11 +59,11 @@ export async function register(input: {
 }
 
 function toAuthUser(user: User): AuthUser {
-  return { id: user.id!, email: user.email, nickname: user.nickname };
+  return { id: user.id, email: user.email, nickname: user.nickname };
 }
 
 function createAuthToken(user: User): string {
-  return jwt.sign({ sub: user.id! }, config.jwtSecret, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign({ sub: user.id }, config.jwtSecret, { expiresIn: JWT_EXPIRES_IN });
 }
 
 export function verifyAuthToken(token: string): AuthTokenPayload {

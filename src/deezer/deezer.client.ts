@@ -4,8 +4,8 @@ import type {
   DeezerArtistDTO,
   DeezerAlbumListItemDTO,
   DeezerSearchResult,
-  DeezerSearchType,
 } from "./deezer.types.js";
+import type { MusicalEntityType } from "../musical-entity/musical-entity.entity.js";
 import { HttpError } from "../shared/errors.js";
 
 const DEEZER_BASE_URL = "https://api.deezer.com";
@@ -34,7 +34,7 @@ export async function search({
   index,
 }: {
   query: string;
-  type: DeezerSearchType;
+  type: MusicalEntityType;
   limit: number;
   index: number;
 }): Promise<DeezerSearchResult> {

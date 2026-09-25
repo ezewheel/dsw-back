@@ -1,15 +1,16 @@
 import * as deezer from "./deezer.client.js";
+import type { MusicalEntityType } from "../musical-entity/musical-entity.entity.js";
 
 export type EntityDisplay = {
   externalId: string;
-  type: "track" | "album" | "artist";
+  type: MusicalEntityType;
   title: string | null;
   cover: string | null;
   artist: string | null;
 };
 
 export async function fetchEntityDisplay(
-  type: "track" | "album" | "artist",
+  type: MusicalEntityType,
   externalId: string,
 ): Promise<EntityDisplay> {
   if (type === "artist") {

@@ -1,37 +1,33 @@
 import { orm } from "../shared/db/orm.js";
-import { MusicalEntity } from "../musical-entity/musical-entity.entity.js";
+import {
+  MusicalEntity,
+  type MusicalEntityType,
+} from "../musical-entity/musical-entity.entity.js";
 import { Interaction } from "./interaction.entity.js";
 import { User } from "../user/user.entity.js";
 import * as deezer from "../deezer/deezer.client.js";
-import { fetchEntityDisplay } from "../deezer/entity-display.js";
+import { fetchEntityDisplay, type EntityDisplay } from "../deezer/entity-display.js";
 import { HttpError } from "../shared/errors.js";
 import type {
   EntityReview,
-  EntityReviewsResult as EntityReviewsPaginated,
+  EntityReviewsResult,
   LatestReview,
   ReviewedSong,
 } from "./interaction.types.js";
 
 export async function getEntityReviews(input: {
-  type: "track" | "album" | "artist";
+  type: MusicalEntityType;
   id: string;
   page: number;
   pageSize: number;
-}): Promise<EntityReviewsPaginated> {
+}): Promise<EntityReviewsResult> {
   const entity = await orm.em.findOne(MusicalEntity, {
     type: input.type,
     deezerId: Number(input.id),
   });
 
   if (!entity) {
-    return {
-      externalId: input.id,
-      page: input.page,
-      pageSize: input.pageSize,
-      total: 0,
-      totalPages: 0,
-      items: [],
-    };
+    return { items: [], total: 0, totalPages: 0 };
   }
 
   const [interactions, total] = await orm.em.findAndCount(
@@ -46,15 +42,12 @@ export async function getEntityReviews(input: {
   );
 
   return {
-    externalId: input.id,
-    page: input.page,
-    pageSize: input.pageSize,
     total,
     totalPages: Math.ceil(total / input.pageSize),
     items: interactions.map((interaction) => ({
       id: interaction.id,
       user: {
-        id: interaction.user.id!,
+        id: interaction.user.id,
         nickname: interaction.user.nickname,
       },
       value: interaction.value,
@@ -66,7 +59,7 @@ export async function getEntityReviews(input: {
 }
 
 export async function saveReview(input: {
-  type: "track" | "album" | "artist";
+  type: MusicalEntityType;
   id: string;
   userId: number;
   value: number;
@@ -89,9 +82,6 @@ export async function saveReview(input: {
     entity = em.create(MusicalEntity, {
       type: input.type,
       deezerId: Number(input.id),
-      reviewsCount: 0,
-      ratingsCount: 0,
-      averageRating: 0,
     });
   }
 
@@ -128,9 +118,9 @@ export async function saveReview(input: {
   return {
     created,
     review: {
-      id: interaction.id!,
+      id: interaction.id,
       user: {
-        id: user.id!,
+        id: user.id,
         nickname: user.nickname,
       },
       value: interaction.value,
@@ -158,7 +148,7 @@ async function refreshEntityStats(entity: MusicalEntity): Promise<void> {
     interactions.length === 0
       ? 0
       : interactions.reduce(
-          (sum, interaction) => sum + Number(interaction.value),
+          (sum, interaction) => sum + interaction.value,
           0,
         ) / interactions.length;
 
@@ -176,51 +166,41 @@ export async function getLatestReviews(limit: number): Promise<LatestReview[]> {
     },
   );
 
-  const uniqueEntities = new Map<string, MusicalEntity>();
-  for (const interaction of interactions) {
-    const entity = interaction.musicalEntity;
-    uniqueEntities.set(`${entity.type}:${entity.deezerId}`, entity);
-  }
+  const displays = new Map<string, Promise<EntityDisplay | null>>();
 
-  const entityInfo = new Map<string, LatestReview["entity"] | null>();
-  await Promise.all(
-    [...uniqueEntities.values()].map(async (entity) => {
-      const key = `${entity.type}:${entity.deezerId}`;
-      try {
-        entityInfo.set(
+  return Promise.all(
+    interactions.map(async (interaction) => {
+      const entity = interaction.musicalEntity;
+      const externalId = String(entity.deezerId);
+      const key = `${entity.type}:${externalId}`;
+
+      if (!displays.has(key)) {
+        displays.set(
           key,
-          await fetchEntityDisplay(entity.type, String(entity.deezerId)),
+          fetchEntityDisplay(entity.type, externalId).catch(() => null),
         );
-      } catch {
-        entityInfo.set(key, null);
       }
+
+      return {
+        id: interaction.id,
+        user: {
+          id: interaction.user.id,
+          nickname: interaction.user.nickname,
+        },
+        value: interaction.value,
+        content: interaction.content!,
+        createdAt: interaction.createdAt.toISOString(),
+        updatedAt: interaction.updatedAt.toISOString(),
+        entity: (await displays.get(key)) ?? {
+          externalId,
+          type: entity.type,
+          title: null,
+          cover: null,
+          artist: null,
+        },
+      };
     }),
   );
-
-  return interactions.map((interaction) => {
-    const entity = interaction.musicalEntity;
-    const key = `${entity.type}:${entity.deezerId}`;
-    const info = entityInfo.get(key);
-
-    return {
-      id: interaction.id,
-      user: {
-        id: interaction.user.id!,
-        nickname: interaction.user.nickname,
-      },
-      value: interaction.value,
-      content: interaction.content!,
-      createdAt: interaction.createdAt.toISOString(),
-      updatedAt: interaction.updatedAt.toISOString(),
-      entity: info ?? {
-        externalId: String(entity.deezerId),
-        type: entity.type,
-        title: null,
-        cover: null,
-        artist: null,
-      },
-    };
-  });
 }
 
 export async function getLatestReviewedSongs(
@@ -228,11 +208,7 @@ export async function getLatestReviewedSongs(
 ): Promise<ReviewedSong[]> {
   const interactions = await orm.em.find(
     Interaction,
-    {
-      deletedAt: null,
-      value: { $gt: 0 },
-      musicalEntity: { type: "track" },
-    },
+    { deletedAt: null, musicalEntity: { type: "track" } },
     {
       populate: ["musicalEntity"],
       orderBy: { createdAt: "DESC" },
@@ -240,18 +216,18 @@ export async function getLatestReviewedSongs(
     },
   );
 
-  const seen = new Set<string>();
-  const songs: ReviewedSong[] = [];
+  const latestByTrack = new Map<number, Interaction>();
   for (const interaction of interactions) {
-    const entity = interaction.musicalEntity;
-    const id = String(entity.deezerId);
-    if (seen.has(id)) continue;
-    seen.add(id);
+    const deezerId = interaction.musicalEntity.deezerId;
+    if (!latestByTrack.has(deezerId)) latestByTrack.set(deezerId, interaction);
+  }
 
-    try {
-      const track = await deezer.getTrack(id);
-      songs.push({
-        externalId: id,
+  const results = await Promise.allSettled(
+    [...latestByTrack.values()].slice(0, limit).map(async (interaction) => {
+      const entity = interaction.musicalEntity;
+      const track = await deezer.getTrack(entity.deezerId);
+      return {
+        externalId: String(entity.deezerId),
         title: track.title,
         artist: track.artist?.name ?? null,
         artistId: track.artist?.id ?? null,
@@ -262,11 +238,11 @@ export async function getLatestReviewedSongs(
         averageRating: entity.averageRating || null,
         reviewsCount: entity.ratingsCount,
         reviewedAt: interaction.createdAt.toISOString(),
-      });
-    } catch {}
+      };
+    }),
+  );
 
-    if (songs.length === limit) break;
-  }
-
-  return songs;
+  return results
+    .filter((result) => result.status === "fulfilled")
+    .map((result) => result.value);
 }

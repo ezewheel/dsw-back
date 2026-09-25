@@ -9,7 +9,7 @@ import { User } from "../user/user.entity.js";
 @Entity()
 export class Follow {
   @PrimaryKey()
-  id?: number;
+  id!: number;
 
   @ManyToOne()
   follower!: User;

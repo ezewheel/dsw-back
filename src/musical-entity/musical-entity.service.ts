@@ -1,54 +1,48 @@
 import { orm } from "../shared/db/orm.js";
-import { MusicalEntity } from "./musical-entity.entity.js";
+import { MusicalEntity, type MusicalEntityType } from "./musical-entity.entity.js";
 import * as deezer from "../deezer/deezer.client.js";
-import type {
-  DeezerSearchResult,
-  DeezerSearchType,
-} from "../deezer/deezer.types.js";
+import type { DeezerSearchResult } from "../deezer/deezer.types.js";
 import { fetchEntityDisplay } from "../deezer/entity-display.js";
 import type {
   AlbumDetail,
   ArtistDetail,
   MusicalSearchResult,
   TopRated,
+  TopRatedItem,
   TrackDetail,
 } from "./musical-entity.types.js";
 
 export async function getTopRated(): Promise<TopRated> {
   const [artists, albums, tracks] = await Promise.all(
-    (["artist", "album", "track"] as const).map(async (type) => {
-      const entities = await orm.em.find(
-        MusicalEntity,
-        { type, averageRating: { $gt: 0 } },
-        {
-          orderBy: { averageRating: "DESC", ratingsCount: "DESC" },
-          limit: 5,
-        },
-      );
-
-      const items: TopRated["artists"] = [];
-      for (const entity of entities) {
-        try {
-          const display = await fetchEntityDisplay(
-            type,
-            String(entity.deezerId),
-          );
-          items.push({
-            externalId: String(entity.deezerId),
-            type,
-            title: display.title,
-            cover: display.cover,
-            artist: display.artist,
-            averageRating: entity.averageRating,
-            reviewsCount: entity.ratingsCount,
-          });
-        } catch {}
-      }
-      return items;
-    }),
+    (["artist", "album", "track"] as const).map(getTopRatedByType),
   );
 
   return { artists, albums, tracks };
+}
+
+async function getTopRatedByType(
+  type: MusicalEntityType,
+): Promise<TopRatedItem[]> {
+  const entities = await orm.em.find(
+    MusicalEntity,
+    { type, averageRating: { $gt: 0 } },
+    {
+      orderBy: { averageRating: "DESC", ratingsCount: "DESC" },
+      limit: 5,
+    },
+  );
+
+  const results = await Promise.allSettled(
+    entities.map(async (entity) => ({
+      ...(await fetchEntityDisplay(type, String(entity.deezerId))),
+      averageRating: entity.averageRating,
+      reviewsCount: entity.ratingsCount,
+    })),
+  );
+
+  return results
+    .filter((result) => result.status === "fulfilled")
+    .map((result) => result.value);
 }
 
 export async function getArtistDetail(
@@ -101,9 +95,9 @@ export async function getAlbumDetail(externalId: string): Promise<AlbumDetail> {
   const album = await deezer.getAlbum(externalId);
   const deezerTracks = album.tracks?.data ?? [];
 
-  const [trackStats, albumStats] = await Promise.all([
+  const [trackStats, { averageRating }] = await Promise.all([
     fetchEntityStats({ type: "track", results: deezerTracks }),
-    fetchEntityStats({ type: "album", results: [{ id: album.id }] }),
+    findEntityRating("album", album.id),
   ]);
 
   const songs = deezerTracks.map((track) => ({
@@ -120,7 +114,7 @@ export async function getAlbumDetail(externalId: string): Promise<AlbumDetail> {
     cover_medium: album.cover_medium,
     release_date: album.release_date,
     artist: { id: album.artist.id, name: album.artist.name },
-    averageRating: albumStats.get(String(album.id))?.averageRating ?? null,
+    averageRating,
     duration: songs.reduce((acc, song) => acc + song.duration, 0),
     songs,
   };
@@ -146,7 +140,7 @@ export async function getTrackDetail(externalId: string): Promise<TrackDetail> {
 
 export async function search(input: {
   query: string;
-  type: DeezerSearchType;
+  type: MusicalEntityType;
   limit: number;
   index: number;
 }): Promise<MusicalSearchResult> {
@@ -165,7 +159,7 @@ type EntityStats = { averageRating: number | null; reviewsCount: number };
 type EntityRating = { averageRating: number | null; ratingsCount: number };
 
 async function findEntityRating(
-  type: DeezerSearchType,
+  type: MusicalEntityType,
   deezerId: number,
 ): Promise<EntityRating> {
   const entity = await orm.em.findOne(MusicalEntity, { type, deezerId });
@@ -176,7 +170,7 @@ async function findEntityRating(
 }
 
 async function fetchEntityStats(raw: {
-  type: DeezerSearchType;
+  type: MusicalEntityType;
   results: { id: number }[];
 }): Promise<Map<string, EntityStats>> {
   const deezerIds = raw.results.map((r) => r.id);

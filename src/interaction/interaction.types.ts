@@ -13,12 +13,9 @@ export type EntityReview = {
 };
 
 export type EntityReviewsResult = {
-  externalId: string;
-  page: number;
-  pageSize: number;
+  items: EntityReview[];
   total: number;
   totalPages: number;
-  items: EntityReview[];
 };
 
 export type LatestReview = {

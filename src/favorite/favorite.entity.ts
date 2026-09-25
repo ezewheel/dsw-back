@@ -14,7 +14,7 @@ import { MusicalEntity } from "../musical-entity/musical-entity.entity.js";
 })
 export class Favorite {
   @PrimaryKey()
-  id?: number;
+  id!: number;
 
   @ManyToOne()
   user!: User;

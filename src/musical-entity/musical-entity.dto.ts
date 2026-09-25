@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
 import { IsIn, IsInt, IsOptional, IsString, Matches, Max, Min } from "class-validator";
+import { MUSICAL_ENTITY_TYPES, type MusicalEntityType } from "./musical-entity.entity.js";
 
 export class DeezerIdParamsDTO {
   @Matches(/^\d+$/, { message: "El id debe ser numérico" })
@@ -10,10 +11,10 @@ export class SearchRequestDTO {
   @IsString({ message: "La consulta debe ser una cadena de texto" })
   query!: string;
 
-  @IsIn(["track", "album", "artist"], {
+  @IsIn(MUSICAL_ENTITY_TYPES, {
     message: "El tipo debe ser track, album o artist",
   })
-  type!: "track" | "album" | "artist";
+  type!: MusicalEntityType;
 
   @IsOptional()
   @Type(() => Number)

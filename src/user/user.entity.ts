@@ -3,7 +3,7 @@ import { Entity, PrimaryKey, Property } from "@mikro-orm/decorators/legacy";
 @Entity()
 export class User {
   @PrimaryKey()
-  id?: number;
+  id!: number;
 
   @Property({ nullable: false, unique: true })
   email!: string;

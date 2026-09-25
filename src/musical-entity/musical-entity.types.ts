@@ -1,3 +1,5 @@
+import type { MusicalEntityType } from "./musical-entity.entity.js";
+
 export type TrackSearchResult = {
   externalId: string;
   type: "track";
@@ -45,7 +47,7 @@ export type MusicalSearchResult = {
 
 export type TopRatedItem = {
   externalId: string;
-  type: "track" | "album" | "artist";
+  type: MusicalEntityType;
   title: string | null;
   cover: string | null;
   artist: string | null;
