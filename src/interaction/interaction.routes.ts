@@ -10,6 +10,8 @@ import {
   saveReview,
   getLatestReviews,
   getLatestReviewedSongs,
+  getOwnReview,
+  deleteReview,
 } from "./interaction.controller.js";
 import { validateDTO } from "../shared/middlewares/validate-dto.middleware.js";
 import { requireAuth } from "../shared/middlewares/require-auth.middleware.js";
@@ -38,6 +40,18 @@ router.post(
   validateDTO(EntityReviewsParamsDTO, "params"),
   validateDTO(CreateReviewDTO, "body"),
   saveReview,
+);
+router.get(
+  "/:type/:id/reviews/own",
+  requireAuth,
+  validateDTO(EntityReviewsParamsDTO, "params"),
+  getOwnReview,
+);
+router.delete(
+  "/:type/:id/reviews",
+  requireAuth,
+  validateDTO(EntityReviewsParamsDTO, "params"),
+  deleteReview,
 );
 
 export default router;

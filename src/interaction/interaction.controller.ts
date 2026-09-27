@@ -4,6 +4,8 @@ import {
   saveReview as saveReviewService,
   getLatestReviews as getLatestReviewsService,
   getLatestReviewedSongs as getLatestReviewedSongsService,
+  getOwnReview as getOwnReviewService,
+  deleteReview as deleteReviewService,
 } from "./interaction.service.js";
 import type {
   CreateReviewDTO,
@@ -35,4 +37,15 @@ export async function saveReview(req: Request, res: Response) {
 export async function getLatestReviewedSongs(req: Request, res: Response) {
   const { limit } = req.query as unknown as LatestReviewsQueryDTO;
   res.json(await getLatestReviewedSongsService(limit));
+}
+
+export async function getOwnReview(req: Request, res: Response) {
+  const { type, id } = req.params as unknown as EntityReviewsParamsDTO;
+  res.json(await getOwnReviewService({ type, id, userId: req.user!.sub }));
+}
+
+export async function deleteReview(req: Request, res: Response) {
+  const { type, id } = req.params as unknown as EntityReviewsParamsDTO;
+  await deleteReviewService({ type, id, userId: req.user!.sub });
+  res.status(204).end();
 }

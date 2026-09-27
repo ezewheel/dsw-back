@@ -39,7 +39,7 @@ export async function getEntityReviews(input: {
     { musicalEntity: entity, content: { $ne: null } },
     {
       populate: ["user"],
-      orderBy: { createdAt: "DESC" },
+      orderBy: { updatedAt: "DESC" },
       limit: input.pageSize,
       offset: (input.page - 1) * input.pageSize,
     },
@@ -48,18 +48,44 @@ export async function getEntityReviews(input: {
   return {
     total,
     totalPages: Math.ceil(total / input.pageSize),
-    items: interactions.map((interaction) => ({
-      id: interaction.id,
-      user: {
-        id: interaction.user.id,
-        nickname: interaction.user.nickname,
-      },
-      value: interaction.value,
-      content: interaction.content!,
-      createdAt: interaction.createdAt.toISOString(),
-      updatedAt: interaction.updatedAt.toISOString(),
-    })),
+    items: interactions.map(toEntityReview),
   };
+}
+
+type OwnReviewInput = {
+  type: MusicalEntityType;
+  id: string;
+  userId: number;
+};
+
+function findOwnInteraction(input: OwnReviewInput) {
+  return orm.em.findOne(
+    Interaction,
+    {
+      user: input.userId,
+      musicalEntity: { type: input.type, deezerId: Number(input.id) },
+    },
+    { populate: ["user", "musicalEntity"] },
+  );
+}
+
+export async function getOwnReview(
+  input: OwnReviewInput,
+): Promise<EntityReview | null> {
+  const interaction = await findOwnInteraction(input);
+  return interaction ? toEntityReview(interaction) : null;
+}
+
+export async function deleteReview(input: OwnReviewInput): Promise<void> {
+  const interaction = await findOwnInteraction(input);
+
+  if (!interaction) {
+    throw new HttpError(404, "No tenés una reseña para este contenido");
+  }
+
+  const entity = interaction.musicalEntity;
+  await orm.em.remove(interaction).flush();
+  await refreshEntityStats(entity);
 }
 
 export async function saveReview(input: {
@@ -114,19 +140,20 @@ export async function saveReview(input: {
   await em.flush();
   await refreshEntityStats(entity);
 
+  return { created, review: toEntityReview(interaction) };
+}
+
+function toEntityReview(interaction: Interaction): EntityReview {
   return {
-    created,
-    review: {
-      id: interaction.id,
-      user: {
-        id: user.id,
-        nickname: user.nickname,
-      },
-      value: interaction.value,
-      content: interaction.content ?? "",
-      createdAt: interaction.createdAt.toISOString(),
-      updatedAt: interaction.updatedAt.toISOString(),
+    id: interaction.id,
+    user: {
+      id: interaction.user.id,
+      nickname: interaction.user.nickname,
     },
+    value: interaction.value,
+    content: interaction.content ?? "",
+    createdAt: interaction.createdAt.toISOString(),
+    updatedAt: interaction.updatedAt.toISOString(),
   };
 }
 
@@ -153,7 +180,7 @@ export async function getLatestReviews(limit: number): Promise<LatestReview[]> {
     { content: { $ne: null } },
     {
       populate: ["user", "musicalEntity"],
-      orderBy: { createdAt: "DESC" },
+      orderBy: { updatedAt: "DESC" },
       limit,
     },
   );
@@ -173,15 +200,7 @@ export async function getLatestReviews(limit: number): Promise<LatestReview[]> {
 
   return Promise.all(
     interactions.map(async (interaction) => ({
-      id: interaction.id,
-      user: {
-        id: interaction.user.id,
-        nickname: interaction.user.nickname,
-      },
-      value: interaction.value,
-      content: interaction.content!,
-      createdAt: interaction.createdAt.toISOString(),
-      updatedAt: interaction.updatedAt.toISOString(),
+      ...toEntityReview(interaction),
       entity: await summarize(interaction.musicalEntity),
     })),
   );
@@ -195,7 +214,7 @@ export async function getLatestReviewedSongs(
     { musicalEntity: { type: "track" } },
     {
       populate: ["musicalEntity"],
-      orderBy: { createdAt: "DESC" },
+      orderBy: { updatedAt: "DESC" },
       limit: Math.max(limit * 5, 50),
     },
   );
@@ -221,7 +240,7 @@ export async function getLatestReviewedSongs(
         cover: track.album?.cover_medium ?? null,
         averageRating: entity.averageRating || null,
         ratingsCount: entity.ratingsCount,
-        reviewedAt: interaction.createdAt.toISOString(),
+        reviewedAt: interaction.updatedAt.toISOString(),
       };
     }),
   );
