@@ -1,5 +1,6 @@
 import { orm } from "../shared/db/orm.js";
 import { MusicalEntity, type MusicalEntityType } from "./musical-entity.entity.js";
+import { Interaction } from "../interaction/interaction.entity.js";
 import * as deezer from "../deezer/deezer.client.js";
 import type { DeezerArtistDTO, DeezerEntity } from "../deezer/deezer.types.js";
 import type {
@@ -120,7 +121,13 @@ export async function getAlbumDetail(externalId: string): Promise<AlbumDetail> {
 
 export async function getTrackDetail(externalId: string): Promise<TrackDetail> {
   const track = await deezer.getTrack(externalId);
-  const rating = await findEntityRating("track", track.id);
+  const [{ averageRating }, reviewsCount] = await Promise.all([
+    findEntityRating("track", track.id),
+    orm.em.count(Interaction, {
+      musicalEntity: { type: "track", deezerId: track.id },
+      content: { $ne: null },
+    }),
+  ]);
 
   return {
     externalId: String(track.id),
@@ -132,7 +139,8 @@ export async function getTrackDetail(externalId: string): Promise<TrackDetail> {
       title: track.album.title,
       cover: track.album.cover_big ?? track.album.cover_medium,
     },
-    ...rating,
+    averageRating,
+    reviewsCount,
   };
 }
 
