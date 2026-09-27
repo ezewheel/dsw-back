@@ -16,6 +16,7 @@ import type {
   EntityReview,
   EntityReviewsResult,
   LatestReview,
+  LatestReviewsResult,
   ReviewedSong,
 } from "./interaction.types.js";
 
@@ -174,14 +175,18 @@ async function refreshEntityStats(entity: MusicalEntity): Promise<void> {
   await orm.em.persist(entity).flush();
 }
 
-export async function getLatestReviews(limit: number): Promise<LatestReview[]> {
-  const interactions = await orm.em.find(
+export async function getLatestReviews(input: {
+  page: number;
+  pageSize: number;
+}): Promise<LatestReviewsResult> {
+  const [interactions, total] = await orm.em.findAndCount(
     Interaction,
     { content: { $ne: null } },
     {
       populate: ["user", "musicalEntity"],
       orderBy: { updatedAt: "DESC" },
-      limit,
+      limit: input.pageSize,
+      offset: (input.page - 1) * input.pageSize,
     },
   );
 
@@ -198,12 +203,18 @@ export async function getLatestReviews(limit: number): Promise<LatestReview[]> {
     return summary;
   };
 
-  return Promise.all(
+  const items = await Promise.all(
     interactions.map(async (interaction) => ({
       ...toEntityReview(interaction),
       entity: await summarize(interaction.musicalEntity),
     })),
   );
+
+  return {
+    items,
+    total,
+    totalPages: Math.ceil(total / input.pageSize),
+  };
 }
 
 export async function getLatestReviewedSongs(

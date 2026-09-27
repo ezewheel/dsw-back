@@ -10,19 +10,19 @@ import {
 import type {
   CreateReviewDTO,
   EntityReviewsParamsDTO,
-  EntityReviewsQueryDTO,
+  ReviewsPageQueryDTO,
   LatestReviewsQueryDTO,
 } from "./interaction.dto.js";
 
 export async function getEntityReviews(req: Request, res: Response) {
   const { type, id } = req.params as unknown as EntityReviewsParamsDTO;
-  const { page, pageSize } = req.query as unknown as EntityReviewsQueryDTO;
+  const { page, pageSize } = req.query as unknown as ReviewsPageQueryDTO;
   res.json(await getEntityReviewsService({ type, id, page, pageSize }));
 }
 
 export async function getLatestReviews(req: Request, res: Response) {
-  const { limit } = req.query as unknown as LatestReviewsQueryDTO;
-  res.json(await getLatestReviewsService(limit));
+  const { page, pageSize } = req.query as unknown as ReviewsPageQueryDTO;
+  res.json(await getLatestReviewsService({ page, pageSize }));
 }
 
 export async function saveReview(req: Request, res: Response) {

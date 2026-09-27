@@ -30,6 +30,12 @@ export type LatestReview = {
   updatedAt: string;
   entity: EntitySummary;
 };
+export type LatestReviewsResult = {
+  items: LatestReview[];
+  total: number;
+  totalPages: number;
+};
+
 
 export type ReviewedSong = {
   externalId: string;

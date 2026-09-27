@@ -13,7 +13,7 @@ export class EntityReviewsParamsDTO extends DeezerIdParamsDTO {
   type!: MusicalEntityType;
 }
 
-export class EntityReviewsQueryDTO {
+export class ReviewsPageQueryDTO {
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: "La página debe ser un número entero" })

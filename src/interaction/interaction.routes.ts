@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   CreateReviewDTO,
   EntityReviewsParamsDTO,
-  EntityReviewsQueryDTO,
+  ReviewsPageQueryDTO,
   LatestReviewsQueryDTO,
 } from "./interaction.dto.js";
 import {
@@ -20,7 +20,7 @@ const router = Router();
 
 router.get(
   "/reviews/latest",
-  validateDTO(LatestReviewsQueryDTO, "query"),
+  validateDTO(ReviewsPageQueryDTO, "query"),
   getLatestReviews,
 );
 router.get(
@@ -31,7 +31,7 @@ router.get(
 router.get(
   "/:type/:id/reviews",
   validateDTO(EntityReviewsParamsDTO, "params"),
-  validateDTO(EntityReviewsQueryDTO, "query"),
+  validateDTO(ReviewsPageQueryDTO, "query"),
   getEntityReviews,
 );
 router.post(
