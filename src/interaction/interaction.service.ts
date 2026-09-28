@@ -37,7 +37,7 @@ export async function getEntityReviews(input: {
 
   const [interactions, total] = await orm.em.findAndCount(
     Interaction,
-    { musicalEntity: entity, content: { $ne: null } },
+    { musicalEntity: entity },
     {
       populate: ["user"],
       orderBy: { updatedAt: "DESC" },
@@ -181,7 +181,7 @@ export async function getLatestReviews(input: {
 }): Promise<LatestReviewsResult> {
   const [interactions, total] = await orm.em.findAndCount(
     Interaction,
-    { content: { $ne: null } },
+    {},
     {
       populate: ["user", "musicalEntity"],
       orderBy: { updatedAt: "DESC" },
