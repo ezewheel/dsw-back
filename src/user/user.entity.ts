@@ -1,4 +1,11 @@
-import { Entity, PrimaryKey, Property } from "@mikro-orm/decorators/legacy";
+import {
+  Entity,
+  ManyToOne,
+  PrimaryKey,
+  Property,
+} from "@mikro-orm/decorators/legacy";
+
+export type UserRole = "user" | "moderator";
 
 @Entity()
 export class User {
@@ -25,4 +32,13 @@ export class User {
 
   @Property()
   createdAt: Date = new Date();
+
+  @Property({ nullable: false, default: "user" })
+  role: UserRole = "user";
+
+  @Property({ nullable: true, type: "datetime" })
+  bannedAt: Date | null = null;
+
+  @ManyToOne(() => User, { nullable: true })
+  bannedBy: User | null = null;
 }

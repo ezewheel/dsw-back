@@ -1,8 +1,10 @@
 import type { Request, Response } from "express";
 import {
+  banUser as banUserService,
   changePassword as changePasswordService,
   getProfile as getProfileService,
   getUser as getUserService,
+  getUserReviews as getUserReviewsService,
   searchUsers as searchUsersService,
   updateProfile as updateProfileService,
 } from "./user.service.js";
@@ -26,20 +28,32 @@ export async function getUser(req: Request, res: Response) {
 }
 
 export async function getProfile(req: Request, res: Response) {
-  res.json(await getProfileService(req.user!.sub));
+  res.json(await getProfileService(req.user!.id));
 }
 
 export async function updateProfile(req: Request, res: Response) {
   const input = req.body as UpdateProfileDTO;
-  res.json(await updateProfileService(req.user!.sub, input));
+  res.json(await updateProfileService(req.user!.id, input));
 }
 
 export async function changePassword(req: Request, res: Response) {
-  await changePasswordService(req.user!.sub, req.body as ChangePasswordDTO);
+  await changePasswordService(req.user!.id, req.body as ChangePasswordDTO);
   res.status(204).end();
 }
 
 export async function getOwnInteractions(req: Request, res: Response) {
   const { page, pageSize } = req.query as unknown as ReviewsPageQueryDTO;
-  res.json(await getUserInteractions({ userId: req.user!.sub, page, pageSize }));
+  res.json(await getUserInteractions({ userId: req.user!.id, page, pageSize }));
+}
+
+export async function getUserReviews(req: Request, res: Response) {
+  const { id } = req.params as unknown as UserIdParamsDTO;
+  const { page, pageSize } = req.query as unknown as ReviewsPageQueryDTO;
+  res.json(await getUserReviewsService({ id, page, pageSize }));
+}
+
+export async function banUser(req: Request, res: Response) {
+  const { id } = req.params as unknown as UserIdParamsDTO;
+  await banUserService({ id, moderator: req.user! });
+  res.status(204).end();
 }

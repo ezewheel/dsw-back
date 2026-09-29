@@ -1,5 +1,5 @@
 import { orm } from "../shared/db/orm.js";
-import { User } from "../user/user.entity.js";
+import { User, type UserRole } from "../user/user.entity.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { config } from "../shared/config.js";
@@ -8,10 +8,13 @@ import { HttpError } from "../shared/errors.js";
 const JWT_EXPIRES_IN = "7d";
 const BCRYPT_ROUNDS = 10;
 
+export const BANNED_USER_MESSAGE = "Tu cuenta fue suspendida";
+
 export interface AuthUser {
   id: number;
   email: string;
   nickname: string;
+  role: UserRole;
 }
 
 export interface AuthTokenPayload {
@@ -33,6 +36,10 @@ export async function login(input: {
 
   if (!user || !(await bcrypt.compare(input.password, user.password))) {
     throw new HttpError(401, "Email o contraseña incorrectos");
+  }
+
+  if (user.bannedAt) {
+    throw new HttpError(403, BANNED_USER_MESSAGE);
   }
 
   return { token: createAuthToken(user), user: toAuthUser(user) };
@@ -64,7 +71,12 @@ export function hashPassword(password: string): Promise<string> {
 }
 
 function toAuthUser(user: User): AuthUser {
-  return { id: user.id, email: user.email, nickname: user.nickname };
+  return {
+    id: user.id,
+    email: user.email,
+    nickname: user.nickname,
+    role: user.role,
+  };
 }
 
 function createAuthToken(user: User): string {

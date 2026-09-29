@@ -84,10 +84,48 @@ export async function deleteReview(input: OwnReviewInput): Promise<void> {
     throw new HttpError(404, "No tenés una reseña para este contenido");
   }
 
-  const { musicalEntity, user } = interaction;
-  await orm.em.remove(interaction).flush();
-  await refreshEntityStats(musicalEntity);
-  await refreshUserStats(user);
+  await deleteReviews([interaction], interaction.user);
+}
+
+export async function deleteReviewById(input: {
+  reviewId: string;
+  moderator: User;
+}): Promise<void> {
+  const interaction = await orm.em.findOne(
+    Interaction,
+    { id: Number(input.reviewId) },
+    { populate: ["user", "musicalEntity"] },
+  );
+
+  if (!interaction) {
+    throw new HttpError(404, "Reseña no encontrada");
+  }
+
+  await deleteReviews([interaction], input.moderator);
+}
+
+export async function deleteReviews(
+  interactions: Interaction[],
+  deletedBy: User,
+): Promise<void> {
+  const deletedAt = new Date();
+  for (const interaction of interactions) {
+    interaction.deletedAt = deletedAt;
+    interaction.deletedBy = deletedBy;
+  }
+  await orm.em.flush();
+
+  const entities = new Set(
+    interactions.map(({ musicalEntity }) => musicalEntity),
+  );
+  for (const entity of entities) {
+    await refreshEntityStats(entity);
+  }
+
+  const authors = new Set(interactions.map(({ user }) => user));
+  for (const author of authors) {
+    await refreshUserStats(author);
+  }
 }
 
 export async function saveReview(input: {

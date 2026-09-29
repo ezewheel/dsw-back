@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   CreateReviewDTO,
   EntityReviewsParamsDTO,
+  ReviewIdParamsDTO,
   ReviewsPageQueryDTO,
   LatestReviewsQueryDTO,
 } from "./interaction.dto.js";
@@ -12,9 +13,13 @@ import {
   getLatestReviewedSongs,
   getOwnReview,
   deleteReview,
+  deleteReviewById,
 } from "./interaction.controller.js";
 import { validateDTO } from "../shared/middlewares/validate-dto.middleware.js";
-import { requireAuth } from "../shared/middlewares/require-auth.middleware.js";
+import {
+  requireAuth,
+  requireModerator,
+} from "../shared/middlewares/require-auth.middleware.js";
 
 const router = Router();
 
@@ -22,6 +27,13 @@ router.get(
   "/reviews/latest",
   validateDTO(ReviewsPageQueryDTO, "query"),
   getLatestReviews,
+);
+router.delete(
+  "/reviews/:reviewId",
+  requireAuth,
+  requireModerator,
+  validateDTO(ReviewIdParamsDTO, "params"),
+  deleteReviewById,
 );
 router.get(
   "/latest-reviewed-songs",

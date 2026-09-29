@@ -6,16 +6,21 @@ import {
   UserSearchQueryDTO,
 } from "./user.dto.js";
 import {
+  banUser,
   changePassword,
   getOwnInteractions,
   getProfile,
   getUser,
+  getUserReviews,
   searchUsers,
   updateProfile,
 } from "./user.controller.js";
 import { ReviewsPageQueryDTO } from "../interaction/interaction.dto.js";
 import { validateDTO } from "../shared/middlewares/validate-dto.middleware.js";
-import { requireAuth } from "../shared/middlewares/require-auth.middleware.js";
+import {
+  requireAuth,
+  requireModerator,
+} from "../shared/middlewares/require-auth.middleware.js";
 
 const router = Router();
 
@@ -35,5 +40,18 @@ router.get(
 );
 router.get("/search", validateDTO(UserSearchQueryDTO, "query"), searchUsers);
 router.get("/:id", validateDTO(UserIdParamsDTO, "params"), getUser);
+router.get(
+  "/:id/reviews",
+  validateDTO(UserIdParamsDTO, "params"),
+  validateDTO(ReviewsPageQueryDTO, "query"),
+  getUserReviews,
+);
+router.post(
+  "/:id/ban",
+  requireAuth,
+  requireModerator,
+  validateDTO(UserIdParamsDTO, "params"),
+  banUser,
+);
 
 export default router;

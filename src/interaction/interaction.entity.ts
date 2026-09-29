@@ -4,17 +4,15 @@ import {
   PrimaryKey,
   Property,
   ManyToOne,
-  Unique,
+  Filter,
 } from "@mikro-orm/decorators/legacy";
 import { User } from "../user/user.entity.js";
 import { MusicalEntity } from "../musical-entity/musical-entity.entity.js";
 
 @Entity()
-@Unique({
-  properties: ["user", "musicalEntity"],
-})
+@Filter({ name: "notDeleted", cond: { deletedAt: null }, default: true })
 export class Interaction {
-  [OptionalProps]?: "createdAt" | "updatedAt";
+  [OptionalProps]?: "createdAt" | "updatedAt" | "deletedAt" | "deletedBy";
 
   @PrimaryKey()
   id!: number;
@@ -36,4 +34,10 @@ export class Interaction {
 
   @Property({ nullable: false, onUpdate: () => new Date() })
   updatedAt: Date = new Date();
+
+  @Property({ nullable: true, type: "datetime" })
+  deletedAt: Date | null = null;
+
+  @ManyToOne(() => User, { nullable: true })
+  deletedBy: User | null = null;
 }

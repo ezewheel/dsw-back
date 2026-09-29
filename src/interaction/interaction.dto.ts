@@ -1,5 +1,14 @@
 import { Type } from "class-transformer";
-import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+} from "class-validator";
 import { DeezerIdParamsDTO } from "../musical-entity/musical-entity.dto.js";
 import {
   MUSICAL_ENTITY_TYPES,
@@ -11,6 +20,11 @@ export class EntityReviewsParamsDTO extends DeezerIdParamsDTO {
     message: "El tipo debe ser track, album o artist",
   })
   type!: MusicalEntityType;
+}
+
+export class ReviewIdParamsDTO {
+  @Matches(/^\d+$/, { message: "El id debe ser numérico" })
+  reviewId!: string;
 }
 
 export class ReviewsPageQueryDTO {
