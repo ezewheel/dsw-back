@@ -8,6 +8,7 @@ import { RequestContext } from "@mikro-orm/core";
 import authRouter from "./auth/auth.routes.js";
 import musicalEntityRouter from "./musical-entity/musical-entity.routes.js";
 import interactionRouter from "./interaction/interaction.routes.js";
+import userRouter from "./user/user.routes.js";
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use((req, res, next) => {
 app.use("/auth", authRouter);
 app.use("/musical-entity", musicalEntityRouter);
 app.use("/interaction", interactionRouter);
+app.use("/user", userRouter);
 
 app.use(errorHandler);
 

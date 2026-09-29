@@ -67,6 +67,7 @@ export type AlbumDetail = {
     name: string;
   };
   averageRating: number | null;
+  ratingsCount: number;
   duration: number;
   tracks: AlbumTrack[];
 };

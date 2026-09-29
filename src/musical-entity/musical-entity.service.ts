@@ -94,7 +94,7 @@ export async function getAlbumDetail(externalId: string): Promise<AlbumDetail> {
   const album = await deezer.getAlbum(externalId);
   const deezerTracks = album.tracks?.data ?? [];
 
-  const [trackEntities, { averageRating }] = await Promise.all([
+  const [trackEntities, rating] = await Promise.all([
     findEntities("track", deezerTracks),
     findEntityRating("album", album.id),
   ]);
@@ -112,7 +112,7 @@ export async function getAlbumDetail(externalId: string): Promise<AlbumDetail> {
     cover: album.cover_big,
     releaseDate: album.release_date,
     artist: { id: album.artist.id, name: album.artist.name },
-    averageRating,
+    ...rating,
     duration: tracks.reduce((acc, track) => acc + track.duration, 0),
     tracks,
   };
