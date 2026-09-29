@@ -15,5 +15,5 @@ export async function register(req: Request, res: Response) {
 }
 
 export async function me(req: Request, res: Response) {
-  res.json(await getMe(req.user!.id));
+  res.json(getMe(req.user!));
 }

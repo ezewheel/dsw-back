@@ -28,16 +28,16 @@ export async function getUser(req: Request, res: Response) {
 }
 
 export async function getProfile(req: Request, res: Response) {
-  res.json(await getProfileService(req.user!.id));
+  res.json(getProfileService(req.user!));
 }
 
 export async function updateProfile(req: Request, res: Response) {
   const input = req.body as UpdateProfileDTO;
-  res.json(await updateProfileService(req.user!.id, input));
+  res.json(await updateProfileService(req.user!, input));
 }
 
 export async function changePassword(req: Request, res: Response) {
-  await changePasswordService(req.user!.id, req.body as ChangePasswordDTO);
+  await changePasswordService(req.user!, req.body as ChangePasswordDTO);
   res.status(204).end();
 }
 

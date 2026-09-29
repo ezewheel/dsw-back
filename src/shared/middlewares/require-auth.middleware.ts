@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import {
-  BANNED_USER_MESSAGE,
+  accountSuspendedError,
   verifyAuthToken,
 } from "../../auth/auth.service.js";
 import { orm } from "../db/orm.js";
@@ -34,7 +34,7 @@ export async function requireAuth(
   }
 
   if (user.bannedAt) {
-    throw new HttpError(403, BANNED_USER_MESSAGE);
+    throw accountSuspendedError();
   }
 
   req.user = user;

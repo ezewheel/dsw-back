@@ -8,7 +8,8 @@ import { HttpError } from "../shared/errors.js";
 const JWT_EXPIRES_IN = "7d";
 const BCRYPT_ROUNDS = 10;
 
-export const BANNED_USER_MESSAGE = "Tu cuenta fue suspendida";
+export const accountSuspendedError = () =>
+  new HttpError(403, "Tu cuenta fue suspendida", "ACCOUNT_SUSPENDED");
 
 export interface AuthUser {
   id: number;
@@ -39,7 +40,7 @@ export async function login(input: {
   }
 
   if (user.bannedAt) {
-    throw new HttpError(403, BANNED_USER_MESSAGE);
+    throw accountSuspendedError();
   }
 
   return { token: createAuthToken(user), user: toAuthUser(user) };
@@ -87,12 +88,6 @@ export function verifyAuthToken(token: string): AuthTokenPayload {
   return jwt.verify(token, config.jwtSecret) as unknown as AuthTokenPayload;
 }
 
-export async function getMe(userId: number): Promise<AuthUser> {
-  const user = await orm.em.findOne(User, { id: userId });
-
-  if (!user) {
-    throw new HttpError(404, "Usuario no encontrado");
-  }
-
+export function getMe(user: User): AuthUser {
   return toAuthUser(user);
 }

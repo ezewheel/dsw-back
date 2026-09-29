@@ -30,9 +30,9 @@ export async function getLatestReviews(req: Request, res: Response) {
 export async function saveReview(req: Request, res: Response) {
   const { type, id } = req.params as unknown as EntityReviewsParamsDTO;
   const { value, content } = req.body as CreateReviewDTO;
-  const userId = req.user!.id;
+  const user = req.user!;
 
-  const { review, created } = await saveReviewService({ type, id, userId, value, content });
+  const { review, created } = await saveReviewService({ type, id, user, value, content });
   res.status(created ? 201 : 200).json(review);
 }
 

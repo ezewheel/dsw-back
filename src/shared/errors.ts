@@ -4,6 +4,7 @@ export class HttpError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    public readonly code?: string,
   ) {
     super(message);
   }
@@ -16,7 +17,9 @@ export function errorHandler(
   next: NextFunction,
 ) {
   if (err instanceof HttpError) {
-    return res.status(err.status).json({ message: err.message });
+    return res
+      .status(err.status)
+      .json({ message: err.message, code: err.code });
   }
 
   if (err instanceof SyntaxError && "body" in err) {

@@ -85,15 +85,14 @@ export async function banUser(input: {
   await deleteReviews(reviews, input.moderator);
 }
 
-export async function getProfile(userId: number): Promise<UserProfile> {
-  return toUserProfile(await findUser(userId));
+export function getProfile(user: User): UserProfile {
+  return toUserProfile(user);
 }
 
 export async function updateProfile(
-  userId: number,
+  user: User,
   input: { nickname: string },
 ): Promise<UserProfile> {
-  const user = await findUser(userId);
   user.nickname = input.nickname;
   await orm.em.flush();
 
@@ -101,11 +100,9 @@ export async function updateProfile(
 }
 
 export async function changePassword(
-  userId: number,
+  user: User,
   input: { currentPassword: string; newPassword: string },
 ): Promise<void> {
-  const user = await findUser(userId);
-
   if (!(await bcrypt.compare(input.currentPassword, user.password))) {
     throw new HttpError(400, "La contraseña actual es incorrecta");
   }

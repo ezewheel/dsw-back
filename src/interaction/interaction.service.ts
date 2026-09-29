@@ -131,17 +131,12 @@ export async function deleteReviews(
 export async function saveReview(input: {
   type: MusicalEntityType;
   id: string;
-  userId: number;
+  user: User;
   value: number;
   content?: string;
 }): Promise<{ review: EntityReview; created: boolean }> {
   const em = orm.em;
-
-  const user = await em.findOne(User, { id: input.userId });
-
-  if (!user) {
-    throw new HttpError(404, "Usuario no encontrado");
-  }
+  const { user } = input;
 
   let entity = await em.findOne(MusicalEntity, {
     type: input.type,
