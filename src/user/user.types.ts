@@ -3,6 +3,11 @@ export type UserSummary = {
   nickname: string;
 };
 
+export type UserProfile = UserSummary & {
+  email: string;
+  interactionsCount: number;
+};
+
 export type UserSearchResult = {
   results: UserSummary[];
   total: number;

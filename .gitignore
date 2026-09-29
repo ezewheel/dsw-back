@@ -28,3 +28,5 @@ tsconfig.tsbuildinfo
 
 ## built vscode extensions
 *.vsix
+
+init.sql
