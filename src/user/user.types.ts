@@ -7,7 +7,8 @@ export type UserSummary = {
 
 export type UserDetail = UserSummary & {
   role: UserRole;
-  bannedAt: string | null;
+  interactionsCount: number;
+  createdAt: string;
 };
 
 export type UserProfile = UserSummary & {

@@ -29,7 +29,7 @@ export async function searchUsers(input: {
 
   const [users, total] = await orm.em.findAndCount(
     User,
-    { nickname: { $like: pattern } },
+    { nickname: { $like: pattern }, bannedAt: null },
     {
       orderBy: { nickname: "ASC" },
       limit: input.limit,
@@ -41,12 +41,13 @@ export async function searchUsers(input: {
 }
 
 export async function getUser(id: string): Promise<UserDetail> {
-  const user = await findUser(Number(id));
+  const user = await findVisibleUser(Number(id));
 
   return {
     ...toUserSummary(user),
     role: user.role,
-    bannedAt: user.bannedAt?.toISOString() ?? null,
+    interactionsCount: user.interactionsCount,
+    createdAt: user.createdAt.toISOString(),
   };
 }
 
@@ -55,7 +56,7 @@ export async function getUserReviews(input: {
   page: number;
   pageSize: number;
 }): Promise<ReviewsWithEntityResult> {
-  const user = await findUser(Number(input.id));
+  const user = await findVisibleUser(Number(input.id));
   return getUserInteractions({ ...input, userId: user.id });
 }
 
@@ -117,6 +118,16 @@ async function findUser(id: number): Promise<User> {
   const user = await orm.em.findOne(User, { id });
 
   if (!user) {
+    throw new HttpError(404, "Usuario no encontrado");
+  }
+
+  return user;
+}
+
+async function findVisibleUser(id: number): Promise<User> {
+  const user = await findUser(id);
+
+  if (user.bannedAt) {
     throw new HttpError(404, "Usuario no encontrado");
   }
 
