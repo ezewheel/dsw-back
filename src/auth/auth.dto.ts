@@ -6,11 +6,20 @@ import {
   MaxLength,
   MinLength,
 } from "class-validator";
-
-export const toTrimmedLowercase = ({ value }: { value: unknown }) =>
-  typeof value === "string" ? value.trim().toLowerCase() : value;
+import { toTrimmed, toTrimmedLowercase } from "../shared/transforms.js";
+import { NICKNAME_MAX_LENGTH } from "../user/user.dto.js";
 
 export class LoginRequestDTO {
+  @Transform(toTrimmedLowercase)
+  @IsEmail({}, { message: "El email no tiene un formato válido" })
+  email!: string;
+
+  @IsString({ message: "La contraseña debe ser un string" })
+  @IsNotEmpty({ message: "Ingresá tu contraseña" })
+  password!: string;
+}
+
+export class RegisterRequestDTO {
   @Transform(toTrimmedLowercase)
   @IsEmail({}, { message: "El email no tiene un formato válido" })
   email!: string;
@@ -21,14 +30,12 @@ export class LoginRequestDTO {
     message: "La contraseña no puede superar los 72 caracteres",
   })
   password!: string;
-}
 
-export const toTrimmed = ({ value }: { value: unknown }) =>
-  typeof value === "string" ? value.trim() : value;
-
-export class RegisterRequestDTO extends LoginRequestDTO {
   @Transform(toTrimmed)
   @IsString({ message: "El nickname debe ser un string" })
   @IsNotEmpty({ message: "El nickname no puede estar vacío" })
+  @MaxLength(NICKNAME_MAX_LENGTH, {
+    message: `El nickname no puede superar los ${NICKNAME_MAX_LENGTH} caracteres`,
+  })
   nickname!: string;
 }

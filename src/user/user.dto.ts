@@ -10,7 +10,9 @@ import {
   Min,
   MinLength,
 } from "class-validator";
-import { toTrimmed } from "../auth/auth.dto.js";
+import { toTrimmed } from "../shared/transforms.js";
+
+export const NICKNAME_MAX_LENGTH = 30;
 
 export class UserIdParamsDTO {
   @Matches(/^\d+$/, { message: "El id debe ser numérico" })
@@ -39,6 +41,9 @@ export class UpdateProfileDTO {
   @Transform(toTrimmed)
   @IsString({ message: "El nickname debe ser un string" })
   @IsNotEmpty({ message: "El nickname no puede estar vacío" })
+  @MaxLength(NICKNAME_MAX_LENGTH, {
+    message: `El nickname no puede superar los ${NICKNAME_MAX_LENGTH} caracteres`,
+  })
   nickname!: string;
 }
 
