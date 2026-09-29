@@ -13,6 +13,7 @@ export type UserDetail = UserSummary & {
 export type UserProfile = UserSummary & {
   email: string;
   interactionsCount: number;
+  createdAt: string;
 };
 
 export type UserSearchResult = {

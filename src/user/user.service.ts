@@ -90,19 +90,9 @@ export async function getProfile(userId: number): Promise<UserProfile> {
 
 export async function updateProfile(
   userId: number,
-  input: { email: string; nickname: string },
+  input: { nickname: string },
 ): Promise<UserProfile> {
   const user = await findUser(userId);
-  const emailOwner = await orm.em.findOne(User, {
-    email: input.email,
-    id: { $ne: userId },
-  });
-
-  if (emailOwner) {
-    throw new HttpError(409, "El email ya está registrado");
-  }
-
-  user.email = input.email;
   user.nickname = input.nickname;
   await orm.em.flush();
 
@@ -142,5 +132,6 @@ function toUserProfile(user: User): UserProfile {
     ...toUserSummary(user),
     email: user.email,
     interactionsCount: user.interactionsCount,
+    createdAt: user.createdAt.toISOString(),
   };
 }

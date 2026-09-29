@@ -1,6 +1,5 @@
 import { Transform, Type } from "class-transformer";
 import {
-  IsEmail,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -11,7 +10,7 @@ import {
   Min,
   MinLength,
 } from "class-validator";
-import { toTrimmed, toTrimmedLowercase } from "../auth/auth.dto.js";
+import { toTrimmed } from "../auth/auth.dto.js";
 
 export class UserIdParamsDTO {
   @Matches(/^\d+$/, { message: "El id debe ser numérico" })
@@ -37,10 +36,6 @@ export class UserSearchQueryDTO {
 }
 
 export class UpdateProfileDTO {
-  @Transform(toTrimmedLowercase)
-  @IsEmail({}, { message: "El email no tiene un formato válido" })
-  email!: string;
-
   @Transform(toTrimmed)
   @IsString({ message: "El nickname debe ser un string" })
   @IsNotEmpty({ message: "El nickname no puede estar vacío" })
