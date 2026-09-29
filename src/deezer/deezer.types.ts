@@ -18,10 +18,6 @@ export interface DeezerAlbumTrackDTO {
   id: number;
   title: string;
   duration: number;
-  album: {
-    title: string;
-    cover_medium: string;
-  };
 }
 
 export interface DeezerTrackDTO {

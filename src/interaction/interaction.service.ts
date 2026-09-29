@@ -15,9 +15,9 @@ import type { EntitySummary } from "../musical-entity/musical-entity.types.js";
 import { HttpError } from "../shared/errors.js";
 import type {
   EntityReview,
-  EntityReviewsResult,
+  Page,
   ReviewedSong,
-  ReviewsWithEntityResult,
+  ReviewWithEntity,
 } from "./interaction.types.js";
 
 export async function getEntityReviews(input: {
@@ -25,7 +25,7 @@ export async function getEntityReviews(input: {
   id: string;
   page: number;
   pageSize: number;
-}): Promise<EntityReviewsResult> {
+}): Promise<Page<EntityReview>> {
   const entity = await orm.em.findOne(MusicalEntity, {
     type: input.type,
     deezerId: Number(input.id),
@@ -40,7 +40,7 @@ export async function getEntityReviews(input: {
     { musicalEntity: entity },
     {
       populate: ["user"],
-      orderBy: { updatedAt: "DESC" },
+      orderBy: { publishedAt: "DESC" },
       limit: input.pageSize,
       offset: (input.page - 1) * input.pageSize,
     },
@@ -162,6 +162,7 @@ export async function saveReview(input: {
   if (interaction) {
     interaction.value = input.value;
     interaction.content = content;
+    interaction.publishedAt = new Date();
   } else {
     interaction = em.create(Interaction, {
       user,
@@ -188,8 +189,7 @@ function toEntityReview(interaction: Interaction): EntityReview {
     },
     value: interaction.value,
     content: interaction.content ?? "",
-    createdAt: interaction.createdAt.toISOString(),
-    updatedAt: interaction.updatedAt.toISOString(),
+    publishedAt: interaction.publishedAt.toISOString(),
   };
 }
 
@@ -222,23 +222,23 @@ type PageInput = {
 
 export function getLatestReviews(
   input: PageInput,
-): Promise<ReviewsWithEntityResult> {
+): Promise<Page<ReviewWithEntity>> {
   return findReviewsWithEntity({}, input);
 }
 
 export function getUserInteractions(
   input: PageInput & { userId: number },
-): Promise<ReviewsWithEntityResult> {
+): Promise<Page<ReviewWithEntity>> {
   return findReviewsWithEntity({ user: input.userId }, input);
 }
 
 async function findReviewsWithEntity(
   where: FilterQuery<Interaction>,
   { page, pageSize }: PageInput,
-): Promise<ReviewsWithEntityResult> {
+): Promise<Page<ReviewWithEntity>> {
   const [interactions, total] = await orm.em.findAndCount(Interaction, where, {
     populate: ["user", "musicalEntity"],
-    orderBy: { updatedAt: "DESC" },
+    orderBy: { publishedAt: "DESC" },
     limit: pageSize,
     offset: (page - 1) * pageSize,
   });
@@ -278,7 +278,7 @@ export async function getLatestReviewedSongs(
     { musicalEntity: { type: "track" } },
     {
       populate: ["musicalEntity"],
-      orderBy: { updatedAt: "DESC" },
+      orderBy: { publishedAt: "DESC" },
       limit: Math.max(limit * 5, 50),
     },
   );
@@ -296,15 +296,15 @@ export async function getLatestReviewedSongs(
       return {
         externalId: String(entity.deezerId),
         title: track.title,
-        artist: track.artist?.name ?? null,
-        artistId: track.artist?.id ?? null,
-        album: track.album?.title ?? null,
-        albumId: track.album?.id ?? null,
-        duration: track.duration ?? null,
-        cover: track.album?.cover_medium ?? null,
+        artist: track.artist.name,
+        artistId: track.artist.id,
+        album: track.album.title,
+        albumId: track.album.id,
+        duration: track.duration,
+        cover: track.album.cover_medium,
         averageRating: entity.averageRating || null,
         ratingsCount: entity.ratingsCount,
-        reviewedAt: interaction.updatedAt.toISOString(),
+        reviewedAt: interaction.publishedAt.toISOString(),
       };
     }),
   );

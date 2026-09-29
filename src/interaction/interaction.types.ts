@@ -1,51 +1,31 @@
 import type { EntitySummary } from "../musical-entity/musical-entity.types.js";
+import type { UserSummary } from "../user/user.types.js";
 
 export type EntityReview = {
   id: number;
-  user: {
-    id: number;
-    nickname: string;
-  };
+  user: UserSummary;
   value: number;
   content: string;
-  createdAt: string;
-  updatedAt: string;
+  publishedAt: string;
 };
 
-export type EntityReviewsResult = {
-  items: EntityReview[];
-  total: number;
-  totalPages: number;
-};
+export type ReviewWithEntity = EntityReview & { entity: EntitySummary };
 
-export type ReviewWithEntity = {
-  id: number;
-  user: {
-    id: number;
-    nickname: string;
-  };
-  value: number;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-  entity: EntitySummary;
-};
-
-export type ReviewsWithEntityResult = {
-  items: ReviewWithEntity[];
+export type Page<T> = {
+  items: T[];
   total: number;
   totalPages: number;
 };
 
 export type ReviewedSong = {
   externalId: string;
-  title: string | null;
-  artist: string | null;
-  artistId: number | null;
-  album: string | null;
-  albumId: number | null;
-  duration: number | null;
-  cover: string | null;
+  title: string;
+  artist: string;
+  artistId: number;
+  album: string;
+  albumId: number;
+  duration: number;
+  cover: string;
   averageRating: number | null;
   ratingsCount: number;
   reviewedAt: string;

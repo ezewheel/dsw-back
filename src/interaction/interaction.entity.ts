@@ -12,7 +12,7 @@ import { MusicalEntity } from "../musical-entity/musical-entity.entity.js";
 @Entity()
 @Filter({ name: "notDeleted", cond: { deletedAt: null }, default: true })
 export class Interaction {
-  [OptionalProps]?: "createdAt" | "updatedAt" | "deletedAt" | "deletedBy";
+  [OptionalProps]?: "publishedAt" | "deletedAt" | "deletedBy";
 
   @PrimaryKey()
   id!: number;
@@ -30,10 +30,7 @@ export class Interaction {
   content?: string | null;
 
   @Property({ nullable: false })
-  createdAt: Date = new Date();
-
-  @Property({ nullable: false, onUpdate: () => new Date() })
-  updatedAt: Date = new Date();
+  publishedAt: Date = new Date();
 
   @Property({ nullable: true, type: "datetime" })
   deletedAt: Date | null = null;

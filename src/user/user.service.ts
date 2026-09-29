@@ -8,7 +8,8 @@ import {
   getUserInteractions,
 } from "../interaction/interaction.service.js";
 import type {
-  ReviewsWithEntityResult,
+  Page,
+  ReviewWithEntity,
 } from "../interaction/interaction.types.js";
 import { User } from "./user.entity.js";
 import type {
@@ -55,7 +56,7 @@ export async function getUserReviews(input: {
   id: string;
   page: number;
   pageSize: number;
-}): Promise<ReviewsWithEntityResult> {
+}): Promise<Page<ReviewWithEntity>> {
   const user = await findVisibleUser(Number(input.id));
   return getUserInteractions({ ...input, userId: user.id });
 }

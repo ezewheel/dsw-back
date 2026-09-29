@@ -10,6 +10,7 @@ import { HttpError } from "../shared/errors.js";
 
 const DEEZER_BASE_URL = "https://api.deezer.com";
 const DEEZER_NO_DATA_CODE = 800;
+const ARTIST_TOP_TRACKS_LIMIT = 50;
 
 async function get<T>(path: string): Promise<T> {
   const url = path.startsWith("http") ? path : `${DEEZER_BASE_URL}${path}`;
@@ -59,9 +60,9 @@ export function getTrack(id: number | string) {
   return get<DeezerTrackDTO>(`/track/${id}`);
 }
 
-export async function getArtistTopTracks(id: number | string, limit = 50) {
+export async function getArtistTopTracks(id: number | string) {
   const { data } = await get<{ data: DeezerTrackDTO[] }>(
-    `/artist/${id}/top?limit=${limit}`,
+    `/artist/${id}/top?limit=${ARTIST_TOP_TRACKS_LIMIT}`,
   );
   return data;
 }
