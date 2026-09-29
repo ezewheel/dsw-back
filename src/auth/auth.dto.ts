@@ -7,7 +7,7 @@ import {
   MinLength,
 } from "class-validator";
 
-const toTrimmedLowercase = ({ value }: { value: unknown }) =>
+export const toTrimmedLowercase = ({ value }: { value: unknown }) =>
   typeof value === "string" ? value.trim().toLowerCase() : value;
 
 export class LoginRequestDTO {
@@ -23,7 +23,7 @@ export class LoginRequestDTO {
   password!: string;
 }
 
-const toTrimmed = ({ value }: { value: unknown }) =>
+export const toTrimmed = ({ value }: { value: unknown }) =>
   typeof value === "string" ? value.trim() : value;
 
 export class RegisterRequestDTO extends LoginRequestDTO {

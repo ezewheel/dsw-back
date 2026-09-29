@@ -18,7 +18,7 @@ export type EntityReviewsResult = {
   totalPages: number;
 };
 
-export type LatestReview = {
+export type ReviewWithEntity = {
   id: number;
   user: {
     id: number;
@@ -30,12 +30,12 @@ export type LatestReview = {
   updatedAt: string;
   entity: EntitySummary;
 };
-export type LatestReviewsResult = {
-  items: LatestReview[];
+
+export type ReviewsWithEntityResult = {
+  items: ReviewWithEntity[];
   total: number;
   totalPages: number;
 };
-
 
 export type ReviewedSong = {
   externalId: string;

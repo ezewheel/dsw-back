@@ -1,9 +1,19 @@
 import type { Request, Response } from "express";
 import {
+  changePassword as changePasswordService,
+  getProfile as getProfileService,
   getUser as getUserService,
   searchUsers as searchUsersService,
+  updateProfile as updateProfileService,
 } from "./user.service.js";
-import type { UserIdParamsDTO, UserSearchQueryDTO } from "./user.dto.js";
+import { getUserInteractions } from "../interaction/interaction.service.js";
+import type { ReviewsPageQueryDTO } from "../interaction/interaction.dto.js";
+import type {
+  ChangePasswordDTO,
+  UpdateProfileDTO,
+  UserIdParamsDTO,
+  UserSearchQueryDTO,
+} from "./user.dto.js";
 
 export async function searchUsers(req: Request, res: Response) {
   const { query, limit, index } = req.query as unknown as UserSearchQueryDTO;
@@ -13,4 +23,23 @@ export async function searchUsers(req: Request, res: Response) {
 export async function getUser(req: Request, res: Response) {
   const { id } = req.params as unknown as UserIdParamsDTO;
   res.json(await getUserService(id));
+}
+
+export async function getProfile(req: Request, res: Response) {
+  res.json(await getProfileService(req.user!.sub));
+}
+
+export async function updateProfile(req: Request, res: Response) {
+  const input = req.body as UpdateProfileDTO;
+  res.json(await updateProfileService(req.user!.sub, input));
+}
+
+export async function changePassword(req: Request, res: Response) {
+  await changePasswordService(req.user!.sub, req.body as ChangePasswordDTO);
+  res.status(204).end();
+}
+
+export async function getOwnInteractions(req: Request, res: Response) {
+  const { page, pageSize } = req.query as unknown as ReviewsPageQueryDTO;
+  res.json(await getUserInteractions({ userId: req.user!.sub, page, pageSize }));
 }

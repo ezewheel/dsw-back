@@ -20,6 +20,9 @@ export class User {
   @Property()
   following: number = 0;
 
+  @Property({ nullable: false, type: "integer" })
+  interactionsCount: number = 0;
+
   @Property()
   createdAt: Date = new Date();
 }

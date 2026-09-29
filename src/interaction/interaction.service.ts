@@ -1,3 +1,4 @@
+import type { FilterQuery } from "@mikro-orm/core";
 import { orm } from "../shared/db/orm.js";
 import {
   MusicalEntity,
@@ -15,9 +16,8 @@ import { HttpError } from "../shared/errors.js";
 import type {
   EntityReview,
   EntityReviewsResult,
-  LatestReview,
-  LatestReviewsResult,
   ReviewedSong,
+  ReviewsWithEntityResult,
 } from "./interaction.types.js";
 
 export async function getEntityReviews(input: {
@@ -84,9 +84,10 @@ export async function deleteReview(input: OwnReviewInput): Promise<void> {
     throw new HttpError(404, "No tenés una reseña para este contenido");
   }
 
-  const entity = interaction.musicalEntity;
+  const { musicalEntity, user } = interaction;
   await orm.em.remove(interaction).flush();
-  await refreshEntityStats(entity);
+  await refreshEntityStats(musicalEntity);
+  await refreshUserStats(user);
 }
 
 export async function saveReview(input: {
@@ -140,6 +141,7 @@ export async function saveReview(input: {
 
   await em.flush();
   await refreshEntityStats(entity);
+  if (created) await refreshUserStats(user);
 
   return { created, review: toEntityReview(interaction) };
 }
@@ -175,20 +177,38 @@ async function refreshEntityStats(entity: MusicalEntity): Promise<void> {
   await orm.em.persist(entity).flush();
 }
 
-export async function getLatestReviews(input: {
+async function refreshUserStats(user: User): Promise<void> {
+  user.interactionsCount = await orm.em.count(Interaction, { user });
+  await orm.em.flush();
+}
+
+type PageInput = {
   page: number;
   pageSize: number;
-}): Promise<LatestReviewsResult> {
-  const [interactions, total] = await orm.em.findAndCount(
-    Interaction,
-    {},
-    {
-      populate: ["user", "musicalEntity"],
-      orderBy: { updatedAt: "DESC" },
-      limit: input.pageSize,
-      offset: (input.page - 1) * input.pageSize,
-    },
-  );
+};
+
+export function getLatestReviews(
+  input: PageInput,
+): Promise<ReviewsWithEntityResult> {
+  return findReviewsWithEntity({}, input);
+}
+
+export function getUserInteractions(
+  input: PageInput & { userId: number },
+): Promise<ReviewsWithEntityResult> {
+  return findReviewsWithEntity({ user: input.userId }, input);
+}
+
+async function findReviewsWithEntity(
+  where: FilterQuery<Interaction>,
+  { page, pageSize }: PageInput,
+): Promise<ReviewsWithEntityResult> {
+  const [interactions, total] = await orm.em.findAndCount(Interaction, where, {
+    populate: ["user", "musicalEntity"],
+    orderBy: { updatedAt: "DESC" },
+    limit: pageSize,
+    offset: (page - 1) * pageSize,
+  });
 
   const summaries = new Map<number, Promise<EntitySummary>>();
   const summarize = (entity: MusicalEntity) => {
@@ -213,7 +233,7 @@ export async function getLatestReviews(input: {
   return {
     items,
     total,
-    totalPages: Math.ceil(total / input.pageSize),
+    totalPages: Math.ceil(total / pageSize),
   };
 }
 

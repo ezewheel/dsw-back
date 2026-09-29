@@ -6,6 +6,7 @@ import { config } from "../shared/config.js";
 import { HttpError } from "../shared/errors.js";
 
 const JWT_EXPIRES_IN = "7d";
+const BCRYPT_ROUNDS = 10;
 
 export interface AuthUser {
   id: number;
@@ -50,12 +51,16 @@ export async function register(input: {
 
   const user = new User();
   user.email = input.email;
-  user.password = await bcrypt.hash(input.password, 10);
+  user.password = await hashPassword(input.password);
   user.nickname = input.nickname;
 
   await orm.em.persist(user).flush();
 
   return { token: createAuthToken(user), user: toAuthUser(user) };
+}
+
+export function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
 }
 
 function toAuthUser(user: User): AuthUser {
