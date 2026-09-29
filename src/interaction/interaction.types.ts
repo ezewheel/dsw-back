@@ -28,5 +28,4 @@ export type ReviewedSong = {
   cover: string;
   averageRating: number | null;
   ratingsCount: number;
-  reviewedAt: string;
 };

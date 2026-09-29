@@ -304,7 +304,6 @@ export async function getLatestReviewedSongs(
         cover: track.album.cover_medium,
         averageRating: entity.averageRating || null,
         ratingsCount: entity.ratingsCount,
-        reviewedAt: interaction.publishedAt.toISOString(),
       };
     }),
   );
