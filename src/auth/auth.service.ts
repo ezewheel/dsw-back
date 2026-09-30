@@ -57,6 +57,12 @@ export async function register(input: {
     throw new HttpError(409, "El email ya está registrado");
   }
 
+  const nicknameTaken = await orm.em.findOne(User, { nickname: input.nickname });
+
+  if (nicknameTaken) {
+    throw new HttpError(409, "El nickname ya está en uso", "NICKNAME_TAKEN");
+  }
+
   const user = new User();
   user.email = input.email;
   user.password = await hashPassword(input.password);

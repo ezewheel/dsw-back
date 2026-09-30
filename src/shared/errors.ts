@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { UniqueConstraintViolationException } from "@mikro-orm/core";
 
 export class HttpError extends Error {
   constructor(
@@ -26,6 +27,10 @@ export function errorHandler(
     return res
       .status(400)
       .json({ message: "El cuerpo de la solicitud no es un JSON válido" });
+  }
+
+  if (err instanceof UniqueConstraintViolationException) {
+    return res.status(409).json({ message: "Ese valor ya está en uso" });
   }
 
   console.error(err);

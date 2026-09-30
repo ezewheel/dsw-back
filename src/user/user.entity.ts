@@ -18,7 +18,7 @@ export class User {
   @Property()
   password!: string;
 
-  @Property()
+  @Property({ nullable: false, unique: true })
   nickname!: string;
 
   @Property()

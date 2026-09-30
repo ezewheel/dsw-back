@@ -95,6 +95,14 @@ export async function updateProfile(
   user: User,
   input: { nickname: string },
 ): Promise<UserProfile> {
+  const nicknameTaken = await orm.em.findOne(User, {
+    nickname: input.nickname,
+  });
+
+  if (nicknameTaken && nicknameTaken.id !== user.id) {
+    throw new HttpError(409, "El nickname ya está en uso", "NICKNAME_TAKEN");
+  }
+
   user.nickname = input.nickname;
   await orm.em.flush();
 
