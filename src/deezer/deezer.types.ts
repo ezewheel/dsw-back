@@ -5,12 +5,11 @@ export interface DeezerAlbumDTO {
   cover_big: string;
   cover_medium: string;
   release_date: string;
+  nb_tracks: number;
+  duration: number;
   artist: {
     id: number;
     name: string;
-  };
-  tracks?: {
-    data: DeezerAlbumTrackDTO[];
   };
 }
 

@@ -91,8 +91,10 @@ export async function getArtistDetail(
 }
 
 export async function getAlbumDetail(externalId: string): Promise<AlbumDetail> {
-  const album = await deezer.getAlbum(externalId);
-  const deezerTracks = album.tracks?.data ?? [];
+  const [album, deezerTracks] = await Promise.all([
+    deezer.getAlbum(externalId),
+    deezer.getAlbumTracks(externalId),
+  ]);
 
   const [trackEntities, rating] = await Promise.all([
     findEntities("track", deezerTracks),
