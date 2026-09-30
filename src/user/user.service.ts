@@ -4,6 +4,7 @@ import { HttpError } from "../shared/errors.js";
 import { hashPassword } from "../auth/auth.service.js";
 import { Interaction } from "../interaction/interaction.entity.js";
 import {
+  deleteAllInteractions,
   deleteReviews,
   getUserInteractions,
 } from "../interaction/interaction.service.js";
@@ -110,6 +111,18 @@ export async function changePassword(
 
   user.password = await hashPassword(input.newPassword);
   await orm.em.flush();
+}
+
+export async function deleteAccount(
+  user: User,
+  input: { password: string },
+): Promise<void> {
+  if (!(await bcrypt.compare(input.password, user.password))) {
+    throw new HttpError(400, "La contraseña es incorrecta");
+  }
+
+  await deleteAllInteractions(user);
+  await orm.em.remove(user).flush();
 }
 
 async function findUser(id: number): Promise<User> {

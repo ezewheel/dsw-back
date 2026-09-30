@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import {
   banUser as banUserService,
   changePassword as changePasswordService,
+  deleteAccount as deleteAccountService,
   getProfile as getProfileService,
   getUser as getUserService,
   getUserReviews as getUserReviewsService,
@@ -12,6 +13,7 @@ import { getUserInteractions } from "../interaction/interaction.service.js";
 import type { ReviewsPageQueryDTO } from "../interaction/interaction.dto.js";
 import type {
   ChangePasswordDTO,
+  DeleteAccountDTO,
   UpdateProfileDTO,
   UserIdParamsDTO,
   UserSearchQueryDTO,
@@ -38,6 +40,11 @@ export async function updateProfile(req: Request, res: Response) {
 
 export async function changePassword(req: Request, res: Response) {
   await changePasswordService(req.user!, req.body as ChangePasswordDTO);
+  res.status(204).end();
+}
+
+export async function deleteAccount(req: Request, res: Response) {
+  await deleteAccountService(req.user!, req.body as DeleteAccountDTO);
   res.status(204).end();
 }
 

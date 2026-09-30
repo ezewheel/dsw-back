@@ -47,6 +47,12 @@ export class UpdateProfileDTO {
   nickname!: string;
 }
 
+export class DeleteAccountDTO {
+  @IsString({ message: "La contraseña debe ser un string" })
+  @IsNotEmpty({ message: "Ingresá tu contraseña" })
+  password!: string;
+}
+
 export class ChangePasswordDTO {
   @IsString({ message: "La contraseña actual debe ser un string" })
   @IsNotEmpty({ message: "Ingresá tu contraseña actual" })

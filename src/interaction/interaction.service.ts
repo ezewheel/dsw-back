@@ -128,6 +128,23 @@ export async function deleteReviews(
   }
 }
 
+export async function deleteAllInteractions(user: User): Promise<void> {
+  const interactions = await orm.em.find(
+    Interaction,
+    { user },
+    { filters: false, populate: ["musicalEntity"] },
+  );
+  const entities = new Set(
+    interactions.map(({ musicalEntity }) => musicalEntity),
+  );
+
+  await orm.em.remove(interactions).flush();
+
+  for (const entity of entities) {
+    await refreshEntityStats(entity);
+  }
+}
+
 export async function saveReview(input: {
   type: MusicalEntityType;
   id: string;

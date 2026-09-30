@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   ChangePasswordDTO,
+  DeleteAccountDTO,
   UpdateProfileDTO,
   UserIdParamsDTO,
   UserSearchQueryDTO,
@@ -8,6 +9,7 @@ import {
 import {
   banUser,
   changePassword,
+  deleteAccount,
   getOwnInteractions,
   getProfile,
   getUser,
@@ -26,6 +28,12 @@ const router = Router();
 
 router.get("/me", requireAuth, getProfile);
 router.put("/me", requireAuth, validateDTO(UpdateProfileDTO), updateProfile);
+router.delete(
+  "/me",
+  requireAuth,
+  validateDTO(DeleteAccountDTO),
+  deleteAccount,
+);
 router.put(
   "/me/password",
   requireAuth,
