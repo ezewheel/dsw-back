@@ -1,0 +1,40 @@
+{
+  "name": "dsw-back",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tsc",
+    "start": "node --env-file-if-exists=.env dist/server.js",
+    "start:dev": "tsc-watch --noClear --onSuccess \"node --env-file-if-exists=.env dist/server.js\""
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.10.0",
+      "onFail": "download"
+    }
+  },
+  "type": "module",
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "26.2.0",
+    "tsc-watch": "7.2.1",
+    "typescript": "7.0.2"
+  },
+  "dependencies": {
+    "@mikro-orm/core": "7.1.15",
+    "@mikro-orm/decorators": "^7.1.15",
+    "@mikro-orm/mysql": "7.1.15",
+    "@mikro-orm/sql-highlighter": "1.0.1",
+    "bcrypt": "^6.0.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "cors": "2.8.6",
+    "express": "5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "reflect-metadata": "0.2.2"
+  }
+}

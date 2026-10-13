@@ -1,0 +1,99 @@
+import { orm } from "../shared/db/orm.js";
+import { User, type UserRole } from "../user/user.entity.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { config } from "../shared/config.js";
+import { HttpError } from "../shared/errors.js";
+
+const JWT_EXPIRES_IN = "7d";
+const BCRYPT_ROUNDS = 10;
+
+export const accountSuspendedError = () =>
+  new HttpError(403, "Tu cuenta fue suspendida", "ACCOUNT_SUSPENDED");
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  nickname: string;
+  role: UserRole;
+}
+
+export interface AuthTokenPayload {
+  sub: number;
+  iat: number;
+  exp: number;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: AuthUser;
+}
+
+export async function login(input: {
+  email: string;
+  password: string;
+}): Promise<AuthResponse> {
+  const user = await orm.em.findOne(User, { email: input.email });
+
+  if (!user || !(await bcrypt.compare(input.password, user.password))) {
+    throw new HttpError(401, "Email o contraseña incorrectos");
+  }
+
+  if (user.bannedAt) {
+    throw accountSuspendedError();
+  }
+
+  return { token: createAuthToken(user), user: toAuthUser(user) };
+}
+
+export async function register(input: {
+  email: string;
+  password: string;
+  nickname: string;
+}): Promise<AuthResponse> {
+  const existing = await orm.em.findOne(User, { email: input.email });
+
+  if (existing) {
+    throw new HttpError(409, "El email ya está registrado");
+  }
+
+  const nicknameTaken = await orm.em.findOne(User, { nickname: input.nickname });
+
+  if (nicknameTaken) {
+    throw new HttpError(409, "El nickname ya está en uso", "NICKNAME_TAKEN");
+  }
+
+  const user = new User();
+  user.email = input.email;
+  user.password = await hashPassword(input.password);
+  user.nickname = input.nickname;
+
+  await orm.em.persist(user).flush();
+
+  return { token: createAuthToken(user), user: toAuthUser(user) };
+}
+
+export function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
+}
+
+function toAuthUser(user: User): AuthUser {
+  return {
+    id: user.id,
+    email: user.email,
+    nickname: user.nickname,
+    role: user.role,
+  };
+}
+
+function createAuthToken(user: User): string {
+  return jwt.sign({ sub: user.id }, config.jwtSecret, { expiresIn: JWT_EXPIRES_IN });
+}
+
+export function verifyAuthToken(token: string): AuthTokenPayload {
+  return jwt.verify(token, config.jwtSecret) as unknown as AuthTokenPayload;
+}
+
+export function getMe(user: User): AuthUser {
+  return toAuthUser(user);
+}

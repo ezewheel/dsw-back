@@ -1,0 +1,55 @@
+export interface DeezerAlbumDTO {
+  id: number;
+  type: "album";
+  title: string;
+  cover_big: string;
+  cover_medium: string;
+  release_date: string;
+  nb_tracks: number;
+  duration: number;
+  artist: {
+    id: number;
+    name: string;
+  };
+}
+
+export interface DeezerAlbumTrackDTO {
+  id: number;
+  title: string;
+  duration: number;
+}
+
+export interface DeezerTrackDTO {
+  id: number;
+  type: "track";
+  title: string;
+  duration: number;
+  artist: {
+    id: number;
+    name: string;
+  };
+  album: {
+    id: number;
+    title: string;
+    cover_medium: string;
+    cover_big?: string;
+  };
+}
+
+export interface DeezerArtistDTO {
+  id: number;
+  type: "artist";
+  name: string;
+  picture_medium: string;
+  picture_big: string;
+  nb_fan: number;
+}
+
+export interface DeezerAlbumListItemDTO {
+  id: number;
+  title: string;
+  cover_big: string;
+  release_date: string;
+}
+
+export type DeezerEntity = DeezerTrackDTO | DeezerAlbumDTO | DeezerArtistDTO;
