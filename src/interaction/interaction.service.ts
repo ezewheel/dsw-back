@@ -161,6 +161,7 @@ export async function saveReview(input: {
   });
 
   if (!entity) {
+    await assertExistsInDeezer(input.type, input.id);
     entity = em.create(MusicalEntity, {
       type: input.type,
       deezerId: Number(input.id),
@@ -195,6 +196,13 @@ export async function saveReview(input: {
   if (created) await refreshUserStats(user);
 
   return { created, review: toEntityReview(interaction) };
+}
+
+async function assertExistsInDeezer(
+  type: MusicalEntityType,
+  id: string,
+): Promise<void> {
+  await deezer.getEntity(type, id);
 }
 
 function toEntityReview(interaction: Interaction): EntityReview {
